@@ -1,4 +1,5 @@
 using Borealis;
+using FluentAssertions;
 
 namespace BorealisTests
 {
@@ -20,8 +21,17 @@ namespace BorealisTests
             var game = new Game();
             game.StartGame();
             game.EndGame();
-            Assert.NotNull(game);
-            Assert.False(game.IsRunning);
+            game.Should().NotBeNull();
+            game.IsRunning.Should().Be(false);
+        }
+
+        [Fact]
+        public void GameStartsWithTwoPlayers()
+        {
+            var game = new Game();
+            game.StartGame();
+            int numOfPlayers = game.Players.Count;
+            numOfPlayers.Should().Be(2);
         }
     }
 }
