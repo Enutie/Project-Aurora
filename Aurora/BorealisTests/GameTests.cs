@@ -1,5 +1,3 @@
-using Borealis;
-using FluentAssertions;
 
 namespace BorealisTests
 {
