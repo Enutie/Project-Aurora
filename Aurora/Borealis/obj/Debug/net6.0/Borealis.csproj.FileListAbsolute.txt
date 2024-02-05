@@ -1,0 +1,12 @@
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\bin\Debug\net6.0\Borealis.deps.json
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\bin\Debug\net6.0\Borealis.dll
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\bin\Debug\net6.0\Borealis.pdb
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\obj\Debug\net6.0\Borealis.csproj.AssemblyReference.cache
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\obj\Debug\net6.0\Borealis.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\obj\Debug\net6.0\Borealis.AssemblyInfoInputs.cache
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\obj\Debug\net6.0\Borealis.AssemblyInfo.cs
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\obj\Debug\net6.0\Borealis.csproj.CoreCompileInputs.cache
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\obj\Debug\net6.0\Borealis.dll
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\obj\Debug\net6.0\refint\Borealis.dll
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\obj\Debug\net6.0\Borealis.pdb
+C:\Users\Inter\Project-Aurora\Aurora\Borealis\obj\Debug\net6.0\ref\Borealis.dll
