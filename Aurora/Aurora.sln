@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurora.Tests", "..\Aurora.T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurora.Server", "..\Aurora.Frontend\Aurora.Frontend.Server\Aurora.Server.csproj", "{E60D1B27-B0B7-491D-8A62-B64F1D622208}"
 EndProject
-Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "Aurora.client", "..\Aurora.Frontend\aurora.frontend.client\Aurora.client.esproj", "{7D8AA5D4-DF79-46C7-87AE-7A3D6CBE3A43}"
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "Aurora.Client", "..\Aurora.Frontend\aurora.frontend.client\Aurora.Client.esproj", "{7D8AA5D4-DF79-46C7-87AE-7A3D6CBE3A43}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
