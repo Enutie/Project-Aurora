@@ -1,4 +1,5 @@
 using Aurora.Server.Models;
+using Aurora.Server.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,7 @@ builder.Services.AddDbContext<CardContext>(options =>
                     options.UseSqlServer(builder.Configuration.GetConnectionString("CardContext")));
 
 builder.Services.AddControllers();
+builder.Services.AddSingleton<IGameService, GameService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

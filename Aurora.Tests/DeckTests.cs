@@ -1,10 +1,12 @@
 ﻿using Xunit;
 using FluentAssertions;
+using System.Linq;
 
 namespace Aurora.Tests
 {
-    public class GameTests
+    public class DeckTests
     {
+
         private IEnumerable<(LandType Type, int Count)> GetLandCounts()
         {
             var landCounts = new[]
@@ -18,34 +20,32 @@ namespace Aurora.Tests
             return landCounts;
         }
         [Fact]
-        public void Game_ShouldStartWithTwoPlayers()
+        public void Deck_ShouldContainCorrectNumberOfLands()
         {
-            // Arrange
-            var game = new Game(GetLandCounts());
 
             // Act
-            var playerCount = game.Players.Count;
+            var deck = new Deck(GetLandCounts());
 
             // Assert
-            playerCount.Should().Be(2);
+            deck.Cards.Count().Should().Be(50);
+            foreach (var landCount in GetLandCounts())
+            {
+                deck.Cards.OfType<Land>().Count(c => c.Type == landCount.Type).Should().Be(landCount.Count);
+            }
         }
 
         [Fact]
-        public void Game_ShouldAllowPlayerToPlayLand()
+        public void Deck_ShouldBeShuffled()
         {
             // Arrange
-            var game = new Game(GetLandCounts());
-            var player = game.Players[0];
-            var land = new Land(LandType.Plains);
-            player.Hand.Add(land);
+            var originalDeck = new Deck(GetLandCounts());
+            var shuffledDeck = new Deck(GetLandCounts());
 
             // Act
-            game.PlayLand(player, land);
+            shuffledDeck.Shuffle();
 
             // Assert
-            player.Battlefield.Should().ContainSingle(c => c == land);
-            player.Hand.Count.Should().Be(7);
+            shuffledDeck.Cards.Should().NotBeEquivalentTo(originalDeck.Cards, options => options.WithStrictOrdering());
         }
-
     }
 }

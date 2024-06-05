@@ -3,7 +3,7 @@ using FluentAssertions;
 
 namespace Aurora.Tests
 {
-    public class GameTests
+    public class LandPlayRulesTests
     {
         private IEnumerable<(LandType Type, int Count)> GetLandCounts()
         {
@@ -18,33 +18,20 @@ namespace Aurora.Tests
             return landCounts;
         }
         [Fact]
-        public void Game_ShouldStartWithTwoPlayers()
+        public void Player_ShouldNotBeAllowedToPlayMoreThanOneLandPerTurn()
         {
             // Arrange
             var game = new Game(GetLandCounts());
+            var currentPlayer = game.GetCurrentPlayer();
+            currentPlayer.Hand.Add(new Land(LandType.Plains));
+            currentPlayer.Hand.Add(new Land(LandType.Island));
 
             // Act
-            var playerCount = game.Players.Count;
+            game.PlayLand(currentPlayer, new Land(LandType.Plains));
+            var canPlayAnotherLand = game.CanPlayLand(currentPlayer);
 
             // Assert
-            playerCount.Should().Be(2);
-        }
-
-        [Fact]
-        public void Game_ShouldAllowPlayerToPlayLand()
-        {
-            // Arrange
-            var game = new Game(GetLandCounts());
-            var player = game.Players[0];
-            var land = new Land(LandType.Plains);
-            player.Hand.Add(land);
-
-            // Act
-            game.PlayLand(player, land);
-
-            // Assert
-            player.Battlefield.Should().ContainSingle(c => c == land);
-            player.Hand.Count.Should().Be(7);
+            canPlayAnotherLand.Should().BeFalse();
         }
 
     }

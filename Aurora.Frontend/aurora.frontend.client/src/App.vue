@@ -1,19 +1,74 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
+import { ref } from 'vue';
+import axios from 'axios';
+import GameBoard from './components/GameBoard.vue';
+
+const gameId = ref('');
+const players = ref([]);
+const currentPlayer = ref('');
+
+const createGame = async (playerName) => {
+  try {
+    const response = await axios.post('/api/Games', { playerName });
+    gameId.value = response.data.gameId;
+    players.value = response.data.players;
+    currentPlayer.value = response.data.currentPlayer;
+    console.log(gameId.value, players.value, currentPlayer.value)
+  } catch (error) {
+    console.error('Error creating game:', error);
+  }
+};
+
+const getGameState = async () => {
+  try {
+    const response = await axios.get(`/api/Games/${gameId.value}`);
+    players.value = response.data.players;
+    currentPlayer.value = response.data.currentPlayer;
+  } catch (error) {
+    console.error('Error getting game state:', error);
+  }
+};
+
+const playLand = async (playerId, landIndex) => {
+  try {
+    const response = await axios.post(`/api/Games/${gameId.value}/play`, {
+      playerId,
+      landIndex,
+    });
+    players.value = response.data.players;
+    currentPlayer.value = response.data.currentPlayer;
+  } catch (error) {
+    console.error('Error playing land:', error);
+  }
+};
+
+const aiPlay = async () => {
+  try {
+    const response = await axios.post(`/api/Games/${gameId.value}/ai-play`);
+    players.value = response.data.players;
+    currentPlayer.value = response.data.currentPlayer;
+  } catch (error) {
+    console.error('Error with AI play:', error);
+  }
+};
 </script>
 
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
     <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+      <GameBoard
+      :gameId="gameId"
+      :players="players"
+      :currentPlayer="currentPlayer"
+      @create-game="createGame"
+      @get-game-state="getGameState"
+      @play-land="playLand"
+      @ai-play="aiPlay"
+    />
     </div>
   </header>
 
   <main>
-    <TheWelcome />
   </main>
 </template>
 

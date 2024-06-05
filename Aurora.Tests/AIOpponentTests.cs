@@ -3,7 +3,7 @@ using FluentAssertions;
 
 namespace Aurora.Tests
 {
-    public class GameTests
+    public class AIOpponentTests
     {
         private IEnumerable<(LandType Type, int Count)> GetLandCounts()
         {
@@ -18,34 +18,39 @@ namespace Aurora.Tests
             return landCounts;
         }
         [Fact]
-        public void Game_ShouldStartWithTwoPlayers()
+        public void AIOpponent_ShouldPlayLandIfHandIsNotEmpty()
         {
             // Arrange
             var game = new Game(GetLandCounts());
+            game.SwitchTurn();
+            var aiPlayer = game.Players[1];
+            var initialHandCount = aiPlayer.Hand.Count;
 
             // Act
-            var playerCount = game.Players.Count;
+            game.TakeAITurn();
 
             // Assert
-            playerCount.Should().Be(2);
+            aiPlayer.Battlefield.Should().HaveCount(1);
+            aiPlayer.Hand.Should().HaveCount(initialHandCount);
+            aiPlayer.Battlefield.Should().Contain(aiPlayer.Battlefield.OfType<Land>().First());
         }
 
         [Fact]
-        public void Game_ShouldAllowPlayerToPlayLand()
+        public void AIOpponent_ShouldDrawAndPlayLandIfHandIsEmpty()
         {
             // Arrange
             var game = new Game(GetLandCounts());
-            var player = game.Players[0];
-            var land = new Land(LandType.Plains);
-            player.Hand.Add(land);
+            game.SwitchTurn();
+            var aiPlayer = game.Players[1];
+            aiPlayer.Hand.Clear();
+            aiPlayer.Battlefield.Clear();
 
             // Act
-            game.PlayLand(player, land);
+            game.TakeAITurn();
 
             // Assert
-            player.Battlefield.Should().ContainSingle(c => c == land);
-            player.Hand.Count.Should().Be(7);
+            aiPlayer.Battlefield.Should().HaveCount(1);
+            aiPlayer.Hand.Should().BeEmpty();
         }
-
     }
 }
