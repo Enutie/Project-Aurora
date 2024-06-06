@@ -1,8 +1,8 @@
-﻿using Aurora.Server.Requests;
+﻿using Microsoft.AspNetCore.Mvc;
+using Aurora.Server.Requests;
 using Aurora.Server.Services;
-using Microsoft.AspNetCore.Mvc;
 
-namespace Aurora.Server.Controllers
+namespace Aurora.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -26,10 +26,11 @@ namespace Aurora.Server.Controllers
                 {
                     Id = p.Id,
                     Name = p.Name,
+                    Life = p.Life,
                     HandCount = p.Hand.Count,
-                    BattlefieldCount = p.Battlefield.Count
-                }),
-                CurrentPlayer = game.GetCurrentPlayer().Id
+                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
+                    DeckCount = p.Deck.Cards.Count
+                }).ToList()
             };
             return Ok(response);
         }
@@ -45,15 +46,26 @@ namespace Aurora.Server.Controllers
                 {
                     Id = p.Id,
                     Name = p.Name,
+                    Life = p.Life,
                     HandCount = p.Hand.Count,
-                    BattlefieldCount = p.Battlefield.Count
-                }),
-                CurrentPlayer = game.GetCurrentPlayer().Id
+                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
+                    DeckCount = p.Deck.Cards.Count,
+                    Battlefield = p.Battlefield.Select(c => new CardResponse
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Power = (c as Creature)?.Power,
+                        Toughness = (c as Creature)?.Toughness
+                    }).ToList()
+                }).ToList(),
+                CurrentPlayer = game.GetCurrentPlayer().Id,
+                IsGameOver = game.IsGameOver,
+                Winner = game.Winner?.Id
             };
             return Ok(response);
         }
 
-        [HttpPost("{gameId}/play")]
+        [HttpPost("{gameId}/play-land")]
         public IActionResult PlayLand(string gameId, [FromBody] PlayLandRequest request)
         {
             var game = _gameService.PlayLand(gameId, request.PlayerId, request.LandIndex);
@@ -64,18 +76,29 @@ namespace Aurora.Server.Controllers
                 {
                     Id = p.Id,
                     Name = p.Name,
+                    Life = p.Life,
                     HandCount = p.Hand.Count,
-                    BattlefieldCount = p.Battlefield.Count
-                }),
-                CurrentPlayer = game.GetCurrentPlayer().Id
+                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
+                    DeckCount = p.Deck.Cards.Count,
+                    Battlefield = p.Battlefield.Select(c => new CardResponse
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Power = (c as Creature)?.Power,
+                        Toughness = (c as Creature)?.Toughness
+                    }).ToList()
+                }).ToList(),
+                CurrentPlayer = game.GetCurrentPlayer().Id,
+                IsGameOver = game.IsGameOver,
+                Winner = game.Winner?.Id
             };
             return Ok(response);
         }
 
-        [HttpPost("{gameId}/ai-play")]
-        public IActionResult AIOpponentPlay(string gameId)
+        [HttpPost("{gameId}/cast-creature")]
+        public IActionResult CastCreature(string gameId, [FromBody] CastCreatureRequest request)
         {
-            var game = _gameService.AIOpponentPlay(gameId);
+            var game = _gameService.CastCreature(gameId, request.PlayerId, request.CreatureIndex);
             var response = new GameStateResponse
             {
                 GameId = game.Id,
@@ -83,10 +106,81 @@ namespace Aurora.Server.Controllers
                 {
                     Id = p.Id,
                     Name = p.Name,
+                    Life = p.Life,
                     HandCount = p.Hand.Count,
-                    BattlefieldCount = p.Battlefield.Count
-                }),
-                CurrentPlayer = game.GetCurrentPlayer().Id
+                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
+                    DeckCount = p.Deck.Cards.Count,
+                    Battlefield = p.Battlefield.Select(c => new CardResponse
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Power = (c as Creature)?.Power,
+                        Toughness = (c as Creature)?.Toughness
+                    }).ToList()
+                }).ToList(),
+                CurrentPlayer = game.GetCurrentPlayer().Id,
+                IsGameOver = game.IsGameOver,
+                Winner = game.Winner?.Id
+            };
+            return Ok(response);
+        }
+
+        [HttpPost("{gameId}/attack")]
+        public IActionResult Attack(string gameId, [FromBody] AttackRequest request)
+        {
+            var game = _gameService.Attack(gameId, request.AttackerId, request.DefenderId, request.AttackingCreatureIds);
+            var response = new GameStateResponse
+            {
+                GameId = game.Id,
+                Players = game.Players.Select(p => new PlayerResponse
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Life = p.Life,
+                    HandCount = p.Hand.Count,
+                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
+                    DeckCount = p.Deck.Cards.Count,
+                    Battlefield = p.Battlefield.Select(c => new CardResponse
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Power = (c as Creature)?.Power,
+                        Toughness = (c as Creature)?.Toughness
+                    }).ToList()
+                }).ToList(),
+                CurrentPlayer = game.GetCurrentPlayer().Id,
+                IsGameOver = game.IsGameOver,
+                Winner = game.Winner?.Id
+            };
+            return Ok(response);
+        }
+
+        [HttpPost("{gameId}/end-turn")]
+        public IActionResult EndTurn(string gameId)
+        {
+            var game = _gameService.EndTurn(gameId);
+            var response = new GameStateResponse
+            {
+                GameId = game.Id,
+                Players = game.Players.Select(p => new PlayerResponse
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Life = p.Life,
+                    HandCount = p.Hand.Count,
+                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
+                    DeckCount = p.Deck.Cards.Count,
+                    Battlefield = p.Battlefield.Select(c => new CardResponse
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Power = (c as Creature)?.Power,
+                        Toughness = (c as Creature)?.Toughness
+                    }).ToList()
+                }).ToList(),
+                CurrentPlayer = game.GetCurrentPlayer().Id,
+                IsGameOver = game.IsGameOver,
+                Winner = game.Winner?.Id
             };
             return Ok(response);
         }

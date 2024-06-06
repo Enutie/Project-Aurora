@@ -5,6 +5,8 @@
         Game CreateGame(string playerName);
         Game GetGame(string gameId);
         Game PlayLand(string gameId, string playerId, int landIndex);
-        Game AIOpponentPlay(string gameId);
+        Game CastCreature(string gameId, string playerId, int creatureIndex);
+        Game Attack(string gameId, string attackerId, string defenderId, List<string> attackingCreatureIds);
+        Game EndTurn(string gameId);
     }
 }

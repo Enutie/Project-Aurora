@@ -17,6 +17,11 @@ public class Deck
         }
     }
 
+    public Deck(IEnumerable<Card> cards)
+    {
+        Cards = cards.ToList();
+    }
+
     public void Shuffle()
     {
         Cards = Cards.OrderBy(x => _random.Next()).ToList();

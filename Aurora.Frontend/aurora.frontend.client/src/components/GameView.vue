@@ -1,39 +1,65 @@
 <template>
-    <div class="game-view">
-<div class="status-message">{{ statusMessage }}</div>
+  <div class="game-view">
+    <div class="status-message">{{ statusMessage }}</div>
 
-        <div class="opponent-hand">
-  <div class="card not-allowed" v-for="(card, index) in opponentHand" :key="index"></div>
-</div>
-<div class="opponent-battlefield">
-  <div class="card not-allowed" v-for="(card, index) in opponentBattlefield" :key="index"></div>
-</div>
-<div class="player-battlefield">
-  <div class="card not-allowed" v-for="(card, index) in playerBattlefield" :key="index"></div>
-</div>
-      <div class="player-hand">
-  <div
-    class="card"
-    v-for="(card, index) in playerHand"
-    :key="index"
-    @click="playLandFromHand(index)"
-    :class="{ 'not-allowed': !isPlayerTurn }"
-  ></div>
-</div>
-      <div class="controls">
-  <button @click="triggerAIOpponentPlay" :disabled="!isAITurn">AI Opponent Play</button>
-</div>
+    <HandZone :cards="opponentHand" />
+    <BattlefieldZone :cards="opponentBattlefield" />
+
+    <BattlefieldZone :cards="playerBattlefield" />
+    <HandZone :cards="playerHand" :is-playable="isPlayerTurn" @card-click="handleCardClick" />
+
+    <PlayerInfo :player="player" />
+
+    <div class="controls">
+      <button @click="triggerAIOpponentPlay" :disabled="!isAITurn">AI Opponent Play</button>
     </div>
-  </template>
-  <script setup>
-  import { ref, onMounted, computed } from 'vue';
-  import axios from 'axios';
-  
-  const props = defineProps({
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed } from 'vue';
+import axios from 'axios';
+import PlayerInfo from './PlayerInfo.vue';
+import HandZone from './HandZone.vue';
+import BattlefieldZone from './BattlefieldZone.vue';
+
+const props = defineProps({
   gameId: {
     type: String,
     required: true
   }
+});
+
+const players = ref([]);
+const currentPlayer = ref('');
+const player = computed(() => players.value.find(p => p.name !== 'AI'));
+const handleCardClick = (index) => {
+  const card = playerHand.value[index];
+  if (card.type === 'Creature') {
+    castCreatureFromHand(index);
+  } else {
+    playLandFromHand(index);
+  }
+};
+
+const playerHand = computed(() => {
+  const player = players.value.find(p => p.name !== 'AI');
+  return player ? player.hand : [];
+});
+
+const playerBattlefield = computed(() => {
+  const player = players.value.find(p => p.name !== 'AI');
+  return player ? player.battlefield : [];
+});
+
+const opponentHand = computed(() => {
+  const opponent = players.value.find(p => p.name === 'AI');
+  return opponent ? opponent.hand : [];
+});
+
+const opponentBattlefield = computed(() => {
+  const opponent = players.value.find(p => p.name === 'AI');
+  return opponent ? opponent.battlefield : [];
 });
 
 const statusMessage = computed(() => {
@@ -49,14 +75,6 @@ const statusMessage = computed(() => {
   }
 });
 
-  const players = ref([]);
-  const currentPlayer = ref('');
-  
-  const playerHand = computed(() => {
-  const player = players.value.find(p => p.name !== 'AI');
-  return player ? Array(player.handCount).fill(null) : [];
-});
-
 const isPlayerTurn = computed(() => {
   const player = players.value.find(p => p.name !== 'AI');
   return player && player.id === currentPlayer.value;
@@ -67,76 +85,69 @@ const isAITurn = computed(() => {
   return aiOpponent && aiOpponent.id === currentPlayer.value;
 });
 
-const playerBattlefield = computed(() => {
+onMounted(async () => {
+  const response = await axios.get(`/api/games/${props.gameId}`);
+  const state = response.data;
+  players.value = state.players;
+  currentPlayer.value = state.currentPlayer;
+});
+
+const playLandFromHand = async (index) => {
   const player = players.value.find(p => p.name !== 'AI');
-  return player ? Array(player.battlefieldCount).fill(null) : [];
-});
+  if (player && player.id === currentPlayer.value) {
+    try {
+      const response = await axios.post(`/api/games/${props.gameId}/play`, {
+        playerId: player.id,
+        landIndex: index
+      });
+      const state = response.data;
+      players.value = state.players;
+      currentPlayer.value = state.currentPlayer;
+    } catch (error) {
+      if (error.response && error.response.status === 400) {
+        alert('You can only play one land per turn.');
+      } else {
+        console.error('Error playing land:', error);
+        alert('An error occurred while playing the land. Please try again.');
+      }
+    }
+  }
+};
 
-const opponentHand = computed(() => {
-  const opponent = players.value.find(p => p.name === 'AI');
-  return opponent ? Array(opponent.handCount).fill(null) : [];
-});
+const castCreatureFromHand = async (index) => {
+  const player = players.value.find(p => p.name !== 'AI');
+  if (player && player.id === currentPlayer.value) {
+    try {
+      const response = await axios.post(`/api/games/${props.gameId}/cast-creature`, {
+        playerId: player.id,
+        creatureIndex: index
+      });
+      const state = response.data;
+      players.value = state.players;
+      currentPlayer.value = state.currentPlayer;
+    } catch (error) {
+      console.error('Error casting creature:', error);
+      alert('An error occurred while casting the creature. Please try again.');
+    }
+  }
+};
 
-const opponentBattlefield = computed(() => {
-  const opponent = players.value.find(p => p.name === 'AI');
-  return opponent ? Array(opponent.battlefieldCount).fill(null) : [];
-});
-  
-  onMounted(async () => {
-    // Fetch initial game state
-    const response = await axios.get(`/api/games/${props.gameId}`);
+const triggerAIOpponentPlay = async () => {
+  try {
+    const response = await axios.post(`/api/games/${props.gameId}/ai-play`);
     const state = response.data;
     players.value = state.players;
     currentPlayer.value = state.currentPlayer;
-  });
-  
-  const playLandFromHand = async (index) => {
-    const player = players.value.find(p => p.name !== 'AI');
-  if (player && player.id === currentPlayer.value) {
-    try {
-
-        await axios.post(`/api/games/${props.gameId}/play`, {
-            playerId: player.id,
-            landIndex: index
-        });
-        // Refresh game state after playing land
-        const response = await axios.get(`/api/games/${props.gameId}`);
-        const state = response.data;
-        players.value = state.players;
-        currentPlayer.value = state.currentPlayer;
-        }
-        catch (error) 
-    {
-        if(error.response && error.response.state === 400)
-        {
-            alert('You can only play one land per turn.')
-        } else {
-            console.error('Error playing land: ', error)
-            alert('An error occurred while playing the land. Please try again.')
-        }
-    }
-    } 
-  };
-  
-  const triggerAIOpponentPlay = async () => {
-      try {
-
-          await axios.post(`/api/games/${props.gameId}/ai-play`);
-          // Refresh game state after AI opponent's move
-          const response = await axios.get(`/api/games/${props.gameId}`);
-          const state = response.data;
-          players.value = state.players;
-          currentPlayer.value = state.currentPlayer;
-        } catch (error) {
-    if (error.response && error.response.status === 500) {
+  } catch (error) {
+    if (error.response && error.response.status === 400) {
       alert('The AI opponent tried to play too many lands in one turn.');
     } else {
       console.error('Error triggering AI opponent play:', error);
       alert('An error occurred while triggering the AI opponent play. Please try again.');
     }
   }
-  };
-  </script>
+};
+</script>
   
   <style scoped>
   .game-view {
@@ -155,18 +166,7 @@ const opponentBattlefield = computed(() => {
   gap: 5px;
 }
 
-.card {
-  width: 50px;
-  height: 70px;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-}
 
-.card.not-allowed {
-  cursor: not-allowed;
-}
   
   .controls {
     display: flex;
@@ -208,9 +208,6 @@ const opponentBattlefield = computed(() => {
     max-width: 100%;
   }
 
-  .card {
-    width: 40px;
-    height: 60px;
-  }
+ 
 }
   </style>

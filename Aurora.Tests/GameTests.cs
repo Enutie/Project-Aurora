@@ -5,23 +5,25 @@ namespace Aurora.Tests
 {
     public class GameTests
     {
-        private IEnumerable<(LandType Type, int Count)> GetLandCounts()
+        private Deck GetDeck
+            ()
         {
-            var landCounts = new[]
+            List<Card> deck = new List<Card>();
+            for (int i = 0; i < 24; i++)
             {
-                new { Type = LandType.Plains, Count = 10 },
-                new { Type = LandType.Island, Count = 10 },
-                new { Type = LandType.Swamp, Count = 10 },
-                new { Type = LandType.Mountain, Count = 10 },
-                new { Type = LandType.Forest, Count = 10 }
-            }.Select(lc => (lc.Type, lc.Count));
-            return landCounts;
+                deck.Add(new Land(LandType.Plains));
+            }
+            for (int i = 0; i < 36; i++)
+            {
+                deck.Add(new Creature("Devoted Hero", new[] { Mana.White }, 1, 2));
+            }
+            return new Deck(deck);
         }
         [Fact]
         public void Game_ShouldStartWithTwoPlayers()
         {
             // Arrange
-            var game = new Game(GetLandCounts());
+            var game = new Game(GetDeck());
 
             // Act
             var playerCount = game.Players.Count;
@@ -34,7 +36,7 @@ namespace Aurora.Tests
         public void Game_ShouldAllowPlayerToPlayLand()
         {
             // Arrange
-            var game = new Game(GetLandCounts());
+            var game = new Game(GetDeck());
             var player = game.Players[0];
             var land = new Land(LandType.Plains);
             player.Hand.Add(land);

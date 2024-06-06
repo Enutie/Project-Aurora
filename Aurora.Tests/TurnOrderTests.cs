@@ -3,25 +3,15 @@ using FluentAssertions;
 
 namespace Aurora.Tests
 {
+    
     public class TurnOrderTests
     {
-        private IEnumerable<(LandType Type, int Count)> GetLandCounts()
-        {
-            var landCounts = new[]
-            {
-                new { Type = LandType.Plains, Count = 10 },
-                new { Type = LandType.Island, Count = 10 },
-                new { Type = LandType.Swamp, Count = 10 },
-                new { Type = LandType.Mountain, Count = 10 },
-                new { Type = LandType.Forest, Count = 10 }
-            }.Select(lc => (lc.Type, lc.Count));
-            return landCounts;
-        }
+        
         [Fact]
         public void Game_ShouldStartWithPlayerOnesTurn()
         {
             // Arrange
-            var game = new Game(GetLandCounts());
+            var game = new Game(Helper.GetDeck());
 
             // Act
             var currentPlayer = game.GetCurrentPlayer();
@@ -34,7 +24,7 @@ namespace Aurora.Tests
         public void Game_ShouldSwitchTurnsAfterPlayerAction()
         {
             // Arrange
-            var game = new Game(GetLandCounts());
+            var game = new Game(Helper.GetDeck());
             var currentPlayer = game.GetCurrentPlayer();
 
             // Act

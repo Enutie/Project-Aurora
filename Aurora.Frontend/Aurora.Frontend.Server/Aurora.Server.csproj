@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Aurora.Tests\Aurora.Tests.csproj" />
     <ProjectReference Include="..\..\Aurora\Aurora.csproj" />
     <ProjectReference Include="..\aurora.frontend.client\Aurora.Client.esproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

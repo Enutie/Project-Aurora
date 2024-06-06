@@ -8,15 +8,7 @@
     public class CreateGameResponse
     {
         public string GameId { get; set; }
-        public IEnumerable<PlayerResponse> Players { get; set; }
-        public string CurrentPlayer { get; set; }
-    }
-
-    public class GameStateResponse
-    {
-        public string GameId { get; set; }
-        public IEnumerable<PlayerResponse> Players { get; set; }
-        public string CurrentPlayer { get; set; }
+        public List<PlayerResponse> Players { get; set; }
     }
 
     public class PlayLandRequest
@@ -25,11 +17,62 @@
         public int LandIndex { get; set; }
     }
 
+    public class CastCreatureRequest
+    {
+        public string PlayerId { get; set; }
+        public int CreatureIndex { get; set; }
+    }
+
+    public class AttackRequest
+    {
+        public string AttackerId { get; set; }
+        public string DefenderId { get; set; }
+        public List<string> AttackingCreatureIds { get; set; }
+    }
+
     public class PlayerResponse
     {
         public string Id { get; set; }
         public string Name { get; set; }
+        public int Life { get; set; }
         public int HandCount { get; set; }
-        public int BattlefieldCount { get; set; }
+        public List<CardResponse> Hand {  get; set; }
+        public int DeckCount { get; set; }
+        public List<CardResponse> Battlefield { get; set; }
     }
+
+    public class CardResponse
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public int? Power { get; set; }
+        public int? Toughness { get; set; }
+
+        public CardResponse()
+        {
+            
+        }
+
+        public CardResponse(Card card)
+        {
+            Id = card.Id;
+            Name = card.Name;
+            if(card is Creature creature)
+            {
+                Power = creature.Power;
+                Toughness = creature.Toughness;
+            }
+                
+        }
+    }
+
+    public class GameStateResponse
+    {
+        public string GameId { get; set; }
+        public List<PlayerResponse> Players { get; set; }
+        public string CurrentPlayer { get; set; }
+        public bool IsGameOver { get; set; }
+        public string Winner { get; set; }
+    }
+
 }
