@@ -47,6 +47,7 @@ namespace Aurora
         {
             currentPlayerIndex = (currentPlayerIndex + 1) % Players.Count;
             _landsPlayedThisTurn[GetCurrentPlayer()] = 0;
+            GetCurrentPlayer().DrawCard();
         }
 
         public bool CanPlayLand(Player player)
@@ -78,9 +79,6 @@ namespace Aurora
             Player aiPlayer = Players[1];
             if (GetCurrentPlayer() == aiPlayer)
             {
-
-                aiPlayer.DrawCard();
-
                 if (aiPlayer.Hand.OfType<Land>().Any())
                 {
                     Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
