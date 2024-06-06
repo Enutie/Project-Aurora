@@ -22,6 +22,7 @@ namespace Aurora.Tests
             player.TakeDamage(1);
 
             // Assert
+            game.CheckWinConditions();
             game.IsGameOver.Should().BeTrue();
             game.Winner.Should().Be(game.Players[1]);
         }
