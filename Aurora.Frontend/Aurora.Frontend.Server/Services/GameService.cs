@@ -75,6 +75,7 @@
         public Game EndTurn(string gameId)
         {
             var game = GetGame(gameId);
+            game.SwitchTurn();
             game.TakeAITurn();
             return game;
         }

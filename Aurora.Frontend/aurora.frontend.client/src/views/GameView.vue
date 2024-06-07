@@ -2,9 +2,9 @@
     <div class="game-view">
         <h1>Project Aurora</h1>
         <GameInfo :gameId="gameId"/>
-        <PlayerList :gameId="gameId" :players="players" />
-        <PlayerActions v-if="!isGameOver" :player="currentPlayer" />
-        <GameOver v-else :winner="winner" />>
+        <PlayerList :gameId="gameId" :players="players" @update-game-state="updateGameState" />
+        <PlayerActions v-if="!isGameOver" :player="currentPlayer" :game-id="gameId" @update-game-state="updateGameState" />
+        <GameOver v-else :winner="winner" />
     </div>
 </template>
 
@@ -28,22 +28,26 @@ onMounted(async () => {
   gameId.value = route.params.id
   try {
     const response = await getGameState(gameId.value)
-    players.value = response.data.players
-    currentPlayer.value = response.data.players.find(p => p.id === response.data.currentPlayer)
-    isGameOver.value = response.data.isGameOver
-    winner.value = response.data.winner
+    updateGameState(response.data)
   } catch (error) {
     console.error('Error fetching game state:', error)
   }
 })
+
+function updateGameState(gameState) {
+    players.value = gameState.players
+    currentPlayer.value = gameState.players.find(p => p.id === gameState.currentPlayer)
+    isGameOver.value = gameState.isGameOver
+    winner.value = gameState.winner
+}
 
 </script>
 
 <style scoped>
 .game-view {
     background-color: firebrick;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
+    display:flex;
+    flex-direction: column;
+    height: 100vh;
 }
 </style>

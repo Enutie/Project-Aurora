@@ -5,6 +5,7 @@
             :key="player.id"
             :player="player"
             :gameId="gameId"
+            @update-game-state="$emit('update-game-state', $event)"
         />
     </div>
 </template>
@@ -22,12 +23,16 @@ defineProps({
         required: true
     }
 })
+
+defineEmits(['update-game-state'])
 </script>
 
 <style scoped>
 .player-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+    background-color: cyan;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 </style>

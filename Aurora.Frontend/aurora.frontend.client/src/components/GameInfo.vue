@@ -12,3 +12,9 @@ defineProps({
     }
 })
 </script>
+
+<style scoped>
+.game-info {
+    background-color: aquamarine;
+}
+</style>

@@ -94,7 +94,6 @@ namespace Aurora
             {
                 player.PlayLand(land);
                 _landsPlayedThisTurn[player]++;
-                SwitchTurn();
             }
             else
             {
@@ -128,7 +127,6 @@ namespace Aurora
                     if (landToPlay != null && CanPlayLand(aiPlayer))
                     {
                         PlayLand(aiPlayer, landToPlay);
-                        return;
                     }
                 }
 
