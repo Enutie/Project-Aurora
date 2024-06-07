@@ -1,4 +1,7 @@
 <template>
+  
+</template>
+<!-- <template>
   <div class="game-view">
       <h1>Project Aurora</h1>
       <GameInfo :gameId="gameId"/>
@@ -12,10 +15,10 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getGameState } from '@/services/api'
-import GameInfo from '@/components/GameInfo.vue'
-import PlayerList from '@/components/PlayerList.vue'
-import PlayerActions from '@/components/PlayerActions.vue'
-import GameOver from '@/components/GameOver.vue'
+import GameInfo from '@/backup/GameInfo.vue'
+import PlayerList from '@/backup/PlayerList.vue'
+import PlayerActions from '@/backup/PlayerActions.vue'
+import GameOver from '@/backup/GameOver.vue'
 
 const route = useRoute()
 const gameId = ref('')
@@ -61,4 +64,4 @@ h1 {
     flex: 1;
     overflow-y: auto;
 }
-</style>
+</style> -->
