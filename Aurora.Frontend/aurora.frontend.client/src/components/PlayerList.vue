@@ -30,6 +30,7 @@ defineEmits(['update-game-state'])
 <style scoped>
 .player-list {
     display: flex;
+    flex-direction: column;
     justify-content: space-around;
     width: 100%;
 }

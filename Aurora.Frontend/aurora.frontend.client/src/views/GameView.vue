@@ -49,8 +49,12 @@ function updateGameState(gameState) {
     color: #fff;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 94vh;
     padding: 20px;
+}
+
+h1 {
+  text-align: center;
 }
 
 .player-list {

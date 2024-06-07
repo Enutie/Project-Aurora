@@ -15,6 +15,12 @@ defineProps({
 
 <style scoped>
 .game-info {
-    background-color: aquamarine;
+    background-color: darkgrey;
+    border-radius: 1em;
 }
+
+h2 {
+    text-align: center;
+}
+
 </style>

@@ -60,18 +60,20 @@ async function playCard({card, index})
 <style scoped>
 .player-info {
     background-color: #2e2e2e;
-    border-radius: 8px;
+    border-radius: 1em;
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 20px;
-    width: 45%;
+    padding: 1em;
+    width: 94%;
 }
 
 .player-stats {
+    background-color: darkolivegreen;
+    border-radius: 1em;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 0.25em;
 }
 
 .stat-item {

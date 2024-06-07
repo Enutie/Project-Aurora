@@ -28,15 +28,15 @@
   
   <style scoped>
   .card {
-    background-color: #f0f0f0;
-    border-radius: 8px;
+    background-color: darkblue;
+    border-radius: 0.5em;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    height: 120px;
+    height: 5em;
     justify-content: space-between;
-    padding: 10px;
+    padding: 1em;
     transition: transform 0.3s ease;
   }
 
@@ -45,6 +45,6 @@
   }
 
   .creature-card {
-    background-color: #c7d2fe;
+    background-color: darkcyan;
   }
   </style>
