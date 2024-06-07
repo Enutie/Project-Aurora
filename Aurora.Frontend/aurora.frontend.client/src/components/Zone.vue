@@ -8,12 +8,10 @@
                 :index="index"
                 @click="playCard(card, index)"
                 />
-                 
             </li>
         </ul>
     </div>
 </template>
-
 <script setup>
 import Card from '../components/Card.vue'
 const emit = defineEmits(['play-card'])
@@ -36,16 +34,14 @@ function playCard(card, index) {
 
 <style scoped>
 .zone {
-  margin-top: 10px;
+    margin-bottom: 20px;
 }
 
 .card-list {
-  list-style-type: none;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    grid-gap: 10px;
+    list-style: none;
+    padding: 0;
 }
-
 </style>

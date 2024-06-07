@@ -29,10 +29,8 @@ defineEmits(['update-game-state'])
 
 <style scoped>
 .player-list {
-    background-color: cyan;
-    flex: 1;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    justify-content: space-around;
+    width: 100%;
 }
 </style>

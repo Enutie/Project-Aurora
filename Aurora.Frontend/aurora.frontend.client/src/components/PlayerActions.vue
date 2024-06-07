@@ -1,8 +1,8 @@
 <template>
-    <div class="player-actions">
-        <h3>CurrentPlayer: {{ player.name }}</h3>
-        <button @click="endTurn" class="action-button">Pass Turn</button>
-    </div>
+  <div class="player-actions">
+      <h3>Current Player: {{ player.name }}</h3>
+      <button @click="endTurn" class="action-button">Pass Turn</button>
+  </div>
 </template>
 
 <script setup>
@@ -35,17 +35,24 @@ async function endTurn() {
 
 <style scoped>
 .player-actions {
-  background-color: mediumturquoise;
-  margin-top: 20px;
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
 }
 
 .action-button {
-  padding: 8px 16px;
-  font-size: 14px;
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+    background-color: #4c51bf;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 10px 20px;
+    transition: background-color 0.3s ease;
+}
+
+.action-button:hover {
+    background-color: #434190;
 }
 </style>

@@ -1,11 +1,11 @@
 <template>
-    <div class="game-view">
-        <h1>Project Aurora</h1>
-        <GameInfo :gameId="gameId"/>
-        <PlayerList :gameId="gameId" :players="players" @update-game-state="updateGameState" />
-        <PlayerActions v-if="!isGameOver" :player="currentPlayer" :game-id="gameId" @update-game-state="updateGameState" />
-        <GameOver v-else :winner="winner" />
-    </div>
+  <div class="game-view">
+      <h1>Project Aurora</h1>
+      <GameInfo :gameId="gameId"/>
+      <PlayerList class="player-list" :gameId="gameId" :players="players" @update-game-state="updateGameState" />
+      <PlayerActions v-if="!isGameOver" :player="currentPlayer" :game-id="gameId" @update-game-state="updateGameState" />
+      <GameOver v-else :winner="winner" />
+  </div>
 </template>
 
 <script setup>
@@ -45,9 +45,16 @@ function updateGameState(gameState) {
 
 <style scoped>
 .game-view {
-    background-color: firebrick;
-    display:flex;
+    background-color: #1e1e1e;
+    color: #fff;
+    display: flex;
     flex-direction: column;
     height: 100vh;
+    padding: 20px;
+}
+
+.player-list {
+    flex: 1;
+    overflow-y: auto;
 }
 </style>

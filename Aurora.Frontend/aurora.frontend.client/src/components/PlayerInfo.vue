@@ -1,10 +1,23 @@
 <template>
     <div class="player-info">
-        <h3>{{ player.name }}</h3>
-        <p>Life: {{ player.life }}</p>
-        <p>Deck Count: {{ player.deckCount }}</p>
-        <Zone :title="`Hand (${player.handCount})`" :cards="player.hand" @play-card="playCard"/>
-        <Zone title="Battlefield" :cards="player.battlefield" />
+        <div class="player-stats">
+            <div class="stat-item">
+                <h3>Name</h3>
+                <p>{{ player.name }}</p>
+            </div>
+            <div class="stat-item">
+                <h3>Life</h3>
+                <p>{{ player.life }}</p>
+            </div>
+            <div class="stat-item">
+                <h3>Deck Count</h3>
+                <p>{{ player.deckCount }}</p>
+            </div>
+        </div>
+        <div class="zones">
+            <Zone :title="`Hand (${player.handCount})`" :cards="player.hand" @play-card="playCard"/>
+            <Zone title="Battlefield" :cards="player.battlefield" />
+        </div>
     </div>
 </template>
 
@@ -46,8 +59,22 @@ async function playCard({card, index})
 
 <style scoped>
 .player-info {
-    background-color: crimson;
-    padding: 10px;
-    border-radius: 4px;
+    background-color: #2e2e2e;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+    width: 45%;
+}
+
+.player-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    text-align: center;
 }
 </style>
