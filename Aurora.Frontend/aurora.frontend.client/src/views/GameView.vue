@@ -2,8 +2,17 @@
   <div class="game-view">
       <div class="playmat top-playmat">
         <Deck position="top" :cardCount="players[1]?.deckCount || 0"/>
-        <Hand :cards="players[1]?.hand || []"/>
-        <Battlefield :cards="players[1]?.battlefield || []" />
+        <Hand 
+          :cards="players[1]?.hand || []" 
+          :playerId="players[1]?.id || ''"
+          @play-land="playLand"
+          @cast-creature="castCreature"/>
+        <Battlefield 
+          :cards="players[1]?.battlefield || []"
+          :playerId="players[1]?.id || ''"
+          :opponentId="players[0]?.id || ''"
+          @attack="attack"
+           />
         <PlayerInfo
           :player="players[1] || {}"
           position="top"
@@ -14,8 +23,17 @@
         :player="players[0] || {}"
         position="bottom"
       />
-      <Battlefield :cards="players[0]?.battlefield" />
-      <Hand :cards="players[0]?.hand" />
+      <Battlefield 
+        :cards="players[0]?.battlefield || []"
+        :playerId="players[0]?.id || ''"
+        :opponentId="players[1]?.id || ''"
+        @attack="attack"
+         />
+      <Hand 
+          :cards="players[0]?.hand || []" 
+          playerId="players[0]?.id || ''"
+          @play-land="playLand"
+          @cast-creature="castCreature"/>
       <Deck position="bottom" :cardCount="players[0]?.deckCount || 0" />
     </div>
     <div class="pass-turn-button">
@@ -27,7 +45,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getGameState, endTurn as endTurnAPI } from '@/services/api'
+import { 
+  getGameState, 
+  endTurn as endTurnAPI, 
+  playLand as playLandAPI,
+  castCreature as castCreatureAPI,
+  attack as attackAPI
+} from '@/services/api'
 import PlayerInfo from '@/components/PlayerInfo.vue';
 import Battlefield from '@/components/Battlefield.vue';
 import Hand from '@/components/Hand.vue';
@@ -63,6 +87,34 @@ async function endTurn() {
     updateGameState(response.data)
   } catch (error) {
     console.error('Error ending turn:', error)
+  }
+}
+
+async function castCreature(cardIndex) {
+  try {
+    const response = await castCreatureAPI(gameId.value, currentPlayer.value.id, cardIndex)
+    updateGameState(response.data)
+  } catch (error) {
+    console.error('Error casting creature')
+  }
+}
+
+async function playLand(cardIndex) {
+  try {
+    const response = await playLandAPI(gameId.value, currentPlayer.value.id, cardIndex)
+    updateGameState(response.data)
+  } catch (error)
+  {
+    console.error('Error playing land:', error)
+  }
+}
+
+async function attack(attackerId, defenderId, attackingCreatureIds) {
+  try {
+    const response = await attackAPI(gameId.value, attackerId, defenderId, attackingCreatureIds);
+    updateGameState(response.data);
+  } catch (error) {
+    console.error('Error attacking:', error);
   }
 }
 

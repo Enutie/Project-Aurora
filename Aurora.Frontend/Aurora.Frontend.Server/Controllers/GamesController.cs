@@ -55,7 +55,8 @@ namespace Aurora.Controllers
                         Id = c.Id,
                         Name = c.Name,
                         Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness
+                        Toughness = (c as Creature)?.Toughness,
+                        Type = c is Creature ? "Creature" : "Land"
                     }).ToList()
                 }).ToList(),
                 CurrentPlayer = game.GetCurrentPlayer().Id,
@@ -85,7 +86,8 @@ namespace Aurora.Controllers
                         Id = c.Id,
                         Name = c.Name,
                         Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness
+                        Toughness = (c as Creature)?.Toughness,
+                        Type = c is Creature ? "Creature" : "Land"
                     }).ToList()
                 }).ToList(),
                 CurrentPlayer = game.GetCurrentPlayer().Id,
@@ -115,7 +117,8 @@ namespace Aurora.Controllers
                         Id = c.Id,
                         Name = c.Name,
                         Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness
+                        Toughness = (c as Creature)?.Toughness,
+                        Type = c is Creature ? "Creature" : "Land"
                     }).ToList()
                 }).ToList(),
                 CurrentPlayer = game.GetCurrentPlayer().Id,
@@ -145,7 +148,8 @@ namespace Aurora.Controllers
                         Id = c.Id,
                         Name = c.Name,
                         Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness
+                        Toughness = (c as Creature)?.Toughness,
+                        Type = c is Creature ? "Creature" : "Land"
                     }).ToList()
                 }).ToList(),
                 CurrentPlayer = game.GetCurrentPlayer().Id,
@@ -175,7 +179,8 @@ namespace Aurora.Controllers
                         Id = c.Id,
                         Name = c.Name,
                         Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness
+                        Toughness = (c as Creature)?.Toughness,
+                        Type = c is Creature ? "Creature" : "Land"
                     }).ToList()
                 }).ToList(),
                 CurrentPlayer = game.GetCurrentPlayer().Id,

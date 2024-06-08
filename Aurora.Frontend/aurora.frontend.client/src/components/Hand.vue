@@ -7,20 +7,31 @@
         :cardName="card.name"
         :cardType="card.type"
         :isInHand="true"
+        :index="index"
+        @play-card="cardClicked(card, index)"
       />
     </div>
   </template>
   
   <script setup>
   import Card from './Card.vue'
+
+  const emit = defineEmits(['play-land', 'cast-creature'])
+
+  function cardClicked(card, index) {
+    if(card.type === 'Land') {
+      emit('play-land', index)
+    } else if(card.type === 'Creature') {
+      emit('cast-creature', index)
+    }
+  }
   
-  const props = defineProps({
+  defineProps({
       cards: {
         type: Array,
         required: true
-      }})
-
-  console.log(props.cards)
+      },
+      })
 
   </script>
   

@@ -1,11 +1,11 @@
 <!-- Card.vue -->
 <template>
-  <div :class="['card', cardType, {'tapped': isTapped || isAttacking}]">
-    <span class="card-name">{{ cardName }}</span>
+  <div :class="['card', cardType, { 'tapped': isTapped, 'attacking': isAttacking }]">
+    <span class="card-name">{{ cardName }} </span>
     <div class="card-buttons" v-if="isInHand || isCreature || isLand">
-      <button class="play-button" v-if="isInHand">Play</button>
-      <button class="attack-button" v-if="isCreature" @click="toggleAttack">{{ isAttacking ? 'Attacking' : 'Attack' }}</button>
-      <button class="block-button" v-if="isCreature">Block</button>
+      <button class="play-button" v-if="isInHand" @click="playCard">Play</button>
+      <button class="attack-button" v-if="isCreature && !isInHand" @click="toggleAttack">{{ isAttacking ? 'Attacking' : 'Attack' }}</button>
+      <button class="block-button" v-if="isCreature && !isInHand">Block</button>
       <button class="tap-button" v-if="isLand && !isInHand" @click="toggleTap">{{ isTapped ? 'Untap' : 'Tap' }}</button>
     </div>
   </div>
@@ -27,8 +27,16 @@ const props = defineProps({
   isInHand: {
     type: Boolean,
     default: false
+  },
+  index: {
+    type: Number,
+    required: true
   }
 })
+
+const emit = defineEmits(['play-card', 'toggle-attack'])
+
+const isAttacking = ref(false);
 
 const isCreature = computed(() => {
   return props.cardType === 'Creature'
@@ -39,14 +47,20 @@ const isLand = computed(() => {
 })
 
 const isTapped = ref(false)
-const isAttacking = ref(false)
 
 function toggleTap() {
   isTapped.value = !isTapped.value
 }
+
 function toggleAttack() {
   isAttacking.value = !isAttacking.value
+  emit('toggle-attack')
 }
+
+function playCard() {
+  emit('play-card', props.index)
+}
+
   </script>
   
   <style scoped>
@@ -79,6 +93,9 @@ function toggleAttack() {
   .land-card {
     background-color: #795548;
   }
+  .attacking {
+  border: 2px solid red;
+}
   
   .card-name {
     display: block;
@@ -142,5 +159,10 @@ function toggleAttack() {
 
 .play-button:hover {
   background-color: #388e3c;
+}
+
+.attacking {
+  border: 2px solid red;
+  box-shadow: 0 0 8px red;
 }
   </style>
