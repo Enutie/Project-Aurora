@@ -1,20 +1,15 @@
 <!-- PlayerInfo.vue -->
 <template>
     <div :class="`player-info ${position}-player-info`">
-      <h2>{{ playerName }}</h2>
-      <p>Life: {{ lifePoints }}</p>
+      <h2>{{ player?.name || 'Unknown Player' }}</h2>
+    <p>Life: {{ player?.life || 0 }}</p>
     </div>
   </template>
   
   <script setup>
-  
-    defineProps ({
-      playerName: {
-        type: String,
-        required: true
-      },
-      lifePoints: {
-        type: Number,
+  defineProps ({
+      player: {
+        type: Object,
         required: true
       },
       position: {

@@ -1,24 +1,37 @@
 <template>
-  
-</template>
-<!-- <template>
   <div class="game-view">
-      <h1>Project Aurora</h1>
-      <GameInfo :gameId="gameId"/>
-      <PlayerList class="player-list" :gameId="gameId" :players="players" @update-game-state="updateGameState" />
-      <PlayerActions v-if="!isGameOver" :player="currentPlayer" :game-id="gameId" @update-game-state="updateGameState" />
-      <GameOver v-else :winner="winner" />
+      <div class="playmat top-playmat">
+        <Deck position="top" :cardCount="players[1]?.deckCount || 0"/>
+        <Hand :cards="players[1]?.hand || []"/>
+        <Battlefield :cards="players[1]?.battlefield || []" />
+        <PlayerInfo
+          :player="players[1] || {}"
+          position="top"
+        />
+      </div>
+      <div class="playmat bottom-playmat">
+      <PlayerInfo
+        :player="players[0] || {}"
+        position="bottom"
+      />
+      <Battlefield :cards="players[0]?.battlefield" />
+      <Hand :cards="players[0]?.hand" />
+      <Deck position="bottom" :cardCount="players[0]?.deckCount || 0" />
+    </div>
+    <div class="pass-turn-button">
+      <button @click="endTurn">Pass Turn</button>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getGameState } from '@/services/api'
-import GameInfo from '@/backup/GameInfo.vue'
-import PlayerList from '@/backup/PlayerList.vue'
-import PlayerActions from '@/backup/PlayerActions.vue'
-import GameOver from '@/backup/GameOver.vue'
+import { getGameState, endTurn as endTurnAPI } from '@/services/api'
+import PlayerInfo from '@/components/PlayerInfo.vue';
+import Battlefield from '@/components/Battlefield.vue';
+import Hand from '@/components/Hand.vue';
+import Deck from '@/components/Deck.vue';
 
 const route = useRoute()
 const gameId = ref('')
@@ -44,24 +57,74 @@ function updateGameState(gameState) {
     winner.value = gameState.winner
 }
 
+async function endTurn() {
+  try {
+    const response = await endTurnAPI(gameId.value)
+    updateGameState(response.data)
+  } catch (error) {
+    console.error('Error ending turn:', error)
+  }
+}
+
 </script>
 
 <style scoped>
 .game-view {
+  display: flex;
+    flex-direction: column;
+    flex: 1;
     background-color: #1e1e1e;
     color: #fff;
+    box-sizing: border-box;
+    padding: 20px;
+    height: 98svh;
+}
+
+.playmat {
     display: flex;
     flex-direction: column;
-    height: 94vh;
-    padding: 20px;
-}
-
-h1 {
-  text-align: center;
-}
-
-.player-list {
     flex: 1;
-    overflow-y: auto;
+    justify-content: space-between;
+    align-items: center;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    padding: 15px;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  .top-playmat {
+    margin-bottom: 10px;
+  }
+  
+  .bottom-playmat {
+    margin-top: 10px;
+  }
+  
+  .pass-turn-button {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+  }
+  
+  .pass-turn-button button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
-</style> -->
+
+.pass-turn-button button:hover {
+  background-color: #45a049;
+}
+
+</style>

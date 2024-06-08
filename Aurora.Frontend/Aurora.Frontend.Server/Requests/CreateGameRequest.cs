@@ -45,6 +45,7 @@
     {
         public string Id { get; set; }
         public string Name { get; set; }
+        public string Type { get; set; }
         public int? Power { get; set; }
         public int? Toughness { get; set; }
 
@@ -61,6 +62,11 @@
             {
                 Power = creature.Power;
                 Toughness = creature.Toughness;
+                Type = "Creature";
+            }
+            else
+            {
+                Type = "Land";
             }
                 
         }

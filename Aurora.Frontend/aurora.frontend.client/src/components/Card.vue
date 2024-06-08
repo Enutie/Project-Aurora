@@ -22,7 +22,7 @@ const props = defineProps({
   cardType: {
     type: String,
     required: true,
-    validator: value => ['creature-card', 'land-card'].includes(value)
+    validator: value => ['Creature', 'Land'].includes(value)
   },
   isInHand: {
     type: Boolean,
@@ -31,11 +31,11 @@ const props = defineProps({
 })
 
 const isCreature = computed(() => {
-  return props.cardType === 'creature-card'
+  return props.cardType === 'Creature'
 })
 
 const isLand = computed(() => {
-  return props.cardType === 'land-card'
+  return props.cardType === 'Land'
 })
 
 const isTapped = ref(false)

@@ -3,7 +3,7 @@
   <div :class="`deck ${position}-deck`" @mouseover="showCount" @mouseleave="hideCount">
     <div class="deck-label">Deck</div>
     <div class="card-count" v-if="isHovering">
-      <span class="count-label"> 53 </span>
+      <span class="count-label"> {{ cardCount}} </span>
     </div>
   </div>
 </template>

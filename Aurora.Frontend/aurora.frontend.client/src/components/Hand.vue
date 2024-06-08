@@ -14,13 +14,14 @@
   <script setup>
   import Card from './Card.vue'
   
-  defineProps( {
+  const props = defineProps({
       cards: {
         type: Array,
         required: true
-      }
-    }
-)
+      }})
+
+  console.log(props.cards)
+
   </script>
   
   <style scoped>
