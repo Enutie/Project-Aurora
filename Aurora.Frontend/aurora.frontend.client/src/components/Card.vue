@@ -1,47 +1,56 @@
 <!-- Card.vue -->
 <template>
-  <div :class="['card', cardType]">
+  <div :class="['card', cardType, {'tapped': isTapped || isAttacking}]">
     <span class="card-name">{{ cardName }}</span>
     <div class="card-buttons" v-if="isInHand || isCreature || isLand">
       <button class="play-button" v-if="isInHand">Play</button>
-      <button class="attack-button" v-if="isCreature">Attack</button>
+      <button class="attack-button" v-if="isCreature" @click="toggleAttack">{{ isAttacking ? 'Attacking' : 'Attack' }}</button>
       <button class="block-button" v-if="isCreature">Block</button>
-      <button class="tap-button" v-if="isLand && !isInHand">Tap</button>
+      <button class="tap-button" v-if="isLand && !isInHand" @click="toggleTap">{{ isTapped ? 'Untap' : 'Tap' }}</button>
     </div>
   </div>
 </template>
   
   <script setup>
-  import { computed} from 'vue'
-    const props = defineProps( {
-      cardName: {
-        type: String,
-        required: true
-      },
-      cardType: {
-        type: String,
-        required: true,
-        validator: value => ['creature-card', 'land-card'].includes(value)
-      },
-      isInHand: {
-        type: Boolean,
-        default: false
-      }
-    })
+import { computed, ref } from 'vue'
 
-    const isCreature =  computed( () => {
-       
-        return props.cardType === 'creature-card'
-      
-    })
-    
-    const isLand = computed(() => {
+const props = defineProps({
+  cardName: {
+    type: String,
+    required: true
+  },
+  cardType: {
+    type: String,
+    required: true,
+    validator: value => ['creature-card', 'land-card'].includes(value)
+  },
+  isInHand: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const isCreature = computed(() => {
+  return props.cardType === 'creature-card'
+})
+
+const isLand = computed(() => {
   return props.cardType === 'land-card'
 })
+
+const isTapped = ref(false)
+const isAttacking = ref(false)
+
+function toggleTap() {
+  isTapped.value = !isTapped.value
+}
+function toggleAttack() {
+  isAttacking.value = !isAttacking.value
+}
   </script>
   
   <style scoped>
-  .card {
+.card {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -75,6 +84,13 @@
     display: block;
     font-weight: bold;
   }
+
+  .tapped {
+  transform: rotate(90deg);
+}
+.tapped:hover {
+  transform: rotate(90deg) translateY(-5px);
+}
   
   .card-buttons {
     display: none;
