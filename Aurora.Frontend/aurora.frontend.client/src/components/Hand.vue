@@ -6,6 +6,7 @@
         :key="index"
         :cardName="card.name"
         :cardType="card.type"
+        :isInHand="true"
       />
     </div>
   </template>
