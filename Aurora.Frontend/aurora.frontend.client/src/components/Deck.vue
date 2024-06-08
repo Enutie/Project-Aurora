@@ -58,13 +58,13 @@ function hideCount() {
   
   .bottom-deck {
     position: absolute;
-    bottom: 1.5em;
+    top: 1.5em;
     left: 1em;
   }
   
   .top-deck {
     position: absolute;
-    top: 1.5em;
+    bottom: 1.5em;
     left: 1em;
   }
 

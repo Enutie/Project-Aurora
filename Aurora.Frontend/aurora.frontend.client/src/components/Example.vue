@@ -1,30 +1,30 @@
 <template>
-    <div class="game-container">
-      <div class="playmat top-playmat">
-        <PlayerInfo
-          playerName="Player 2"
-          :lifePoints="20"
-          position="top"
-        />
-        <Battlefield :cards="topBattlefieldCards" />
-        <Hand :cards="topHandCards" />
-        <Deck position="bottom" />
-      </div>
-      <div class="playmat bottom-playmat">
-        <PlayerInfo
-          playerName="Player 1"
-          :lifePoints="20"
-          position="bottom"
-        />
-        <Battlefield :cards="bottomBattlefieldCards" />
-        <Hand :cards="bottomHandCards" />
-        <Deck position="top" />
-      </div>
-      <div class="pass-turn-button">
-        <button @click="passTheTurn">Pass Turn</button>
-      </div>
+  <div class="game-container">
+    <div class="playmat top-playmat">
+      <Deck position="top" />
+      <Hand :cards="topHandCards" />
+      <Battlefield :cards="topBattlefieldCards" />
+      <PlayerInfo
+        playerName="Player 2"
+        :lifePoints="20"
+        position="top"
+      />
     </div>
-  </template>
+    <div class="playmat bottom-playmat">
+      <PlayerInfo
+        playerName="Player 1"
+        :lifePoints="20"
+        position="bottom"
+      />
+      <Battlefield :cards="bottomBattlefieldCards" />
+      <Hand :cards="bottomHandCards" />
+      <Deck position="bottom" />
+    </div>
+    <div class="pass-turn-button">
+      <button @click="passTheTurn">Pass Turn</button>
+    </div>
+  </div>
+</template>
   
   <script setup>
   import { useGameState } from '../useGameState.js'
