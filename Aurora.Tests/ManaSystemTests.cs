@@ -6,7 +6,7 @@ namespace Aurora.Tests
     public class ManaSystemTests
     {
         [Fact]
-        public void Land_ShouldProduceManaAndBeTapped()
+        public void Land_ShouldNotBeTappedWhenPlayed()
         {
             // Arrange
             var land = new Land(LandType.Forest);
@@ -16,28 +16,28 @@ namespace Aurora.Tests
             player.PlayLand(land);
 
             // Assert
-            player.ManaPool._mana.Keys.Should().Contain(Mana.Green);
-            player.ManaPool.LandsUsed.Should().Contain(land);
-            land.IsTapped.Should().BeTrue();
+            land.IsTapped.Should().BeFalse();
+            player.Battlefield.Should().Contain(land);
         }
 
         [Fact]
-        public void Player_ShouldSpendManaFromPool()
+        public void Player_ShouldTapLandsWhenCastingCreature()
         {
             // Arrange
-            var player = new Player();
-            var land1 = new Land(LandType.Forest);
-            var land2 = new Land(LandType.Forest);
-            player.PlayLand(land1);
-            player.PlayLand(land2);
-            var manaCost = new[] { Mana.Green, Mana.Green };
+            var game = new Game(Helper.GetDeck());
+            var player = game.GetCurrentPlayer();
+            var land = new Land(LandType.Forest);
+            player.PlayLand(land);
+            var creature = new Creature("Test Creature", new[] { Mana.Green }, 1, 1);
+            player.Hand.Add(creature);
 
             // Act
-            player.ManaPool.Spend(manaCost);
+            game.CastCreature(player, creature);
 
             // Assert
-            player.ManaPool._mana.Should().BeEmpty();
-            player.ManaPool.LandsUsed.Should().BeEmpty();
+            land.IsTapped.Should().BeTrue();
+            player.Battlefield.Should().Contain(creature);
+            player.Hand.Should().NotContain(creature);
         }
 
         [Fact]

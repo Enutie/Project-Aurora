@@ -112,18 +112,28 @@ namespace Aurora
 
         public void CastCreature(Player player, Creature creature)
         {
-            var untappedLands = player.Battlefield.OfType<Land>().Where(l => !l.IsTapped).ToList();
-            var availableMana = untappedLands.Select(l => l.ProducedMana).ToList();
+            var availableLands = player.Battlefield.OfType<Land>().Where(l => !l.IsTapped).ToList();
+            var availableMana = availableLands.Select(l => l.ProducedMana).ToList();
+
             if (CanAfford(availableMana, creature.ManaCost))
             {
-                PayMana(untappedLands, creature.ManaCost);
-                player.ManaPool.Spend(creature.ManaCost);
+                PayMana(availableLands, creature.ManaCost);
                 player.Hand.Remove(creature);
                 player.Battlefield.Add(creature);
             }
             else
             {
                 throw new InvalidOperationException("Player does not have enough mana to cast the creature.");
+            }
+        }
+
+        private void PayMana(List<Land> availableLands, IEnumerable<Mana> cost)
+        {
+            foreach (var mana in cost)
+            {
+                var land = availableLands.First(l => l.ProducedMana == mana);
+                land.IsTapped = true;
+                availableLands.Remove(land);
             }
         }
 
@@ -142,15 +152,6 @@ namespace Aurora
                 }
             }
             return !remainingCost.Any();
-        }
-
-        private void PayMana(List<Land> untappedLands, IEnumerable<Mana> cost)
-        {
-            foreach (var mana in cost)
-            {
-                var land = untappedLands.First(l => l.ProducedMana == mana);
-                land.IsTapped = true;
-            }
         }
 
         public void TakeAITurn()
