@@ -24,7 +24,8 @@ namespace Aurora
         {
             Hand.Remove(land);
             Battlefield.Add(land);
-            ManaPool.Add(land.ProducedMana);
+            land.IsTapped = true;
+            ManaPool.Add(land.ProducedMana, land);
         }
 
         public void DrawCard()

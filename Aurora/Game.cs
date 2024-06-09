@@ -12,6 +12,7 @@ namespace Aurora
         private int currentPlayerIndex = 0;
         public string Id { get; set; }
         private Dictionary<Player, int> _landsPlayedThisTurn = new Dictionary<Player, int>();
+        private bool _hasAttackedThisTurn = false;
         public bool IsGameOver { get; private set; }
         public Player Winner { get; private set; }
 
@@ -74,7 +75,15 @@ namespace Aurora
         public void SwitchTurn()
         {
             currentPlayerIndex = (currentPlayerIndex + 1) % Players.Count;
+            var currentPlayer = GetCurrentPlayer();
             _landsPlayedThisTurn[GetCurrentPlayer()] = 0;
+            _hasAttackedThisTurn = false;
+
+            foreach (var land in currentPlayer.Battlefield.OfType<Land>())
+            {
+                land.IsTapped = false;
+            }
+
             DrawCard(GetCurrentPlayer());
             CheckWinConditions();
         }
@@ -103,8 +112,11 @@ namespace Aurora
 
         public void CastCreature(Player player, Creature creature)
         {
-            if (player.ManaPool.CanAfford(creature.ManaCost))
+            var untappedLands = player.Battlefield.OfType<Land>().Where(l => !l.IsTapped).ToList();
+            var availableMana = untappedLands.Select(l => l.ProducedMana).ToList();
+            if (CanAfford(availableMana, creature.ManaCost))
             {
+                PayMana(untappedLands, creature.ManaCost);
                 player.ManaPool.Spend(creature.ManaCost);
                 player.Hand.Remove(creature);
                 player.Battlefield.Add(creature);
@@ -112,6 +124,32 @@ namespace Aurora
             else
             {
                 throw new InvalidOperationException("Player does not have enough mana to cast the creature.");
+            }
+        }
+
+        private bool CanAfford(List<Mana> availableMana, IEnumerable<Mana> cost)
+        {
+            var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
+            foreach (var mana in availableMana)
+            {
+                if (remainingCost.ContainsKey(mana))
+                {
+                    remainingCost[mana]--;
+                    if (remainingCost[mana] == 0)
+                    {
+                        remainingCost.Remove(mana);
+                    }
+                }
+            }
+            return !remainingCost.Any();
+        }
+
+        private void PayMana(List<Land> untappedLands, IEnumerable<Mana> cost)
+        {
+            foreach (var mana in cost)
+            {
+                var land = untappedLands.First(l => l.ProducedMana == mana);
+                land.IsTapped = true;
             }
         }
 
@@ -140,6 +178,24 @@ namespace Aurora
 
         public void Attack(Player attacker, Player defender, List<Creature> attackingCreatures)
         {
+            if (attacker != GetCurrentPlayer())
+            {
+                throw new InvalidOperationException("Only the current player can attack.");
+            }
+
+            if (_hasAttackedThisTurn)
+            {
+                throw new InvalidOperationException("Player has already attacked this turn.");
+            }
+
+            foreach (var creature in attackingCreatures)
+            {
+                if (!attacker.Battlefield.Contains(creature))
+                {
+                    throw new InvalidOperationException("Cannot attack with a creature that is not on the attacker's battlefield.");
+                }
+            }
+
             // Assign the attacking creatures
             foreach (var creature in attackingCreatures)
             {
@@ -171,6 +227,8 @@ namespace Aurora
                 creature.IsBlocked = false;
                 creature.BlockedBy = null;
             }
+
+            _hasAttackedThisTurn = true;
         }
     }
 }

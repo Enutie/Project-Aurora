@@ -29,6 +29,7 @@ namespace Aurora.Tests
 
             // Act
             game.PlayLand(currentPlayer, new Land(LandType.Plains));
+            game.SwitchTurn();
             var newCurrentPlayer = game.GetCurrentPlayer();
 
             // Assert

@@ -11,11 +11,14 @@ namespace Aurora
         White, Blue, Black, Red, Green, Colorless
     }
 
+
     public class ManaPool
     {
         public Dictionary<Mana, int> _mana = new Dictionary<Mana, int>();
+        public List<Land> LandsUsed { get; } = new List<Land>();
 
-        public void Add(Mana mana)
+
+        public void Add(Mana mana, Land land)
         {
             if (_mana.ContainsKey(mana))
             {
@@ -25,6 +28,7 @@ namespace Aurora
             {
                 _mana[mana] = 1;
             }
+            LandsUsed.Add(land);
         }
 
         public bool CanAfford(IEnumerable<Mana> cost)
@@ -59,6 +63,12 @@ namespace Aurora
                     _mana.Remove(mana);
                 }
             }
+        }
+
+        public void Clear()
+        {
+            _mana.Clear();
+            LandsUsed.Clear();
         }
     }
 }

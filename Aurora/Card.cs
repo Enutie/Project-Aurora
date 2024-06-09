@@ -23,6 +23,7 @@
     public class Land : Card
     {
         public LandType Type { get; }
+        public bool IsTapped { get; set; }
         public Mana ProducedMana => Type switch
         {
             LandType.Plains => Mana.White,
