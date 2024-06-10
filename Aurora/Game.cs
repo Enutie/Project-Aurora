@@ -9,12 +9,17 @@ namespace Aurora
     public class Game
     {
         public List<Player> Players { get; } = new List<Player>();
-        private int currentPlayerIndex = 0;
+        public int currentPlayerIndex { get; set; } = 0;
         public string Id { get; set; }
         private Dictionary<Player, int> _landsPlayedThisTurn = new Dictionary<Player, int>();
         private bool _hasAttackedThisTurn = false;
         public bool IsGameOver { get; private set; }
         public Player Winner { get; private set; }
+
+        private Player _attackingPlayer;
+        private Player _defendingPlayer;
+        private List<Creature> _attackingCreatures;
+        private Dictionary<Creature, Creature> _blockingCreatures;
 
         public Game(Deck deck)
         {
@@ -32,6 +37,19 @@ namespace Aurora
             var player2 = new Player { Deck = deck2 };
             DrawStartingHand(player2);
             Players.Add(player2);
+        }
+
+        public Game(List<Player> players)
+        {
+            Players = players;
+
+            foreach( Player player in Players)
+            {
+                player.Deck.Shuffle();
+                DrawStartingHand(player);
+            }
+
+
         }
         public void CheckWinConditions()
         {
@@ -175,6 +193,42 @@ namespace Aurora
             {
                 throw new InvalidOperationException($"Its not the {aiPlayer.Name}'s Turn");
             }
+        }
+
+
+        public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
+        {
+            _attackingPlayer = attackingPlayer;
+            _attackingCreatures = attackingCreatures;
+        }
+
+        public void AssignBlockers(Player defendingPlayer, Dictionary<Creature, Creature> blockingCreatures)
+        {
+            _defendingPlayer = defendingPlayer;
+            _blockingCreatures = blockingCreatures;
+
+            ResolveCombat();
+        }
+
+        private void ResolveCombat()
+        {
+            foreach (var attackingCreature in _attackingCreatures)
+            {
+                if (_blockingCreatures.TryGetValue(attackingCreature, out var blockingCreature))
+                {
+                    attackingCreature.DealDamage(blockingCreature);
+                    blockingCreature.DealDamage(attackingCreature);
+                }
+                else
+                {
+                    _defendingPlayer.TakeDamage(attackingCreature.Power);
+                }
+            }
+
+            _attackingCreatures.Clear();
+            _blockingCreatures.Clear();
+
+            CheckWinConditions();
         }
 
         public void Attack(Player attacker, Player defender, List<Creature> attackingCreatures)

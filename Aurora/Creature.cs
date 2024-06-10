@@ -27,5 +27,6 @@ namespace Aurora
             Power = power;
             Toughness = toughness;
         }
+        
     }
 }
