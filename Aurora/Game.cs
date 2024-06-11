@@ -136,12 +136,17 @@ namespace Aurora
         {
             var availableLands = player.Battlefield.OfType<Land>().Where(l => !l.IsTapped).ToList();
             var availableMana = availableLands.Select(l => l.ProducedMana).ToList();
-
             if (CanAfford(availableMana, creature.ManaCost))
             {
                 PayMana(availableLands, creature.ManaCost);
-                player.Hand.Remove(creature);
-                player.Battlefield.Add(creature);
+
+                // Find the specific creature in the player's hand based on its Id
+                var creatureToRemove = player.Hand.FirstOrDefault(c => c.Id == creature.Id);
+                if (creatureToRemove != null)
+                {
+                    player.Hand.Remove(creatureToRemove);
+                    player.Battlefield.Add(creature);
+                }
             }
             else
             {

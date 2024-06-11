@@ -33,9 +33,13 @@ namespace Aurora
 
         public void PlayLand(Land land)
         {
-            Hand.Remove(land);
-            Battlefield.Add(land);
-            ManaPool.Add(land.ProducedMana, land);
+            var landToRemove = Hand.FirstOrDefault(l => l.Id == land.Id);
+            if (landToRemove != null)
+            {
+                Hand.Remove(landToRemove);
+                Battlefield.Add(land);
+                ManaPool.Add(land.ProducedMana, land);
+            }
         }
 
         public void DrawCard()
