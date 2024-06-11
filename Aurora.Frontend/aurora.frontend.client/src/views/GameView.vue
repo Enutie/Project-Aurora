@@ -1,174 +1,80 @@
 <template>
   <div class="game-view">
-      <div class="playmat top-playmat">
-        <Deck position="top" :cardCount="players[1]?.deckCount || 0"/>
-        <Hand 
-          :cards="players[1]?.hand || []" 
-          :playerId="players[1]?.id || ''"
-          @play-land="playLand"
-          @cast-creature="castCreature"/>
-        <Battlefield 
-          :cards="players[1]?.battlefield || []"
-          :playerId="players[1]?.id || ''"
-          :opponentId="players[0]?.id || ''"
-          @attack="attack"
-           />
-        <PlayerInfo
-          :player="players[1] || {}"
-          position="top"
-        />
-      </div>
-      <div class="playmat bottom-playmat">
-      <PlayerInfo
-        :player="players[0] || {}"
-        position="bottom"
+    <div class="playmat top-playmat">
+      <Deck position="top" :cardCount="gameStore.players[1]?.deckCount || 0" />
+      <Hand
+        :cards="gameStore.players[1]?.hand || []"
+        :playerId="gameStore.players[1]?.id || ''"
+        @play-land="gameStore.playLand"
+        @cast-creature="gameStore.castCreature"
       />
-      <Battlefield 
-        :cards="players[0]?.battlefield || []"
-        :playerId="players[0]?.id || ''"
-        :opponentId="players[1]?.id || ''"
-        @attack="attack"
-         />
-      <Hand 
-          :cards="players[0]?.hand || []" 
-          playerId="players[0]?.id || ''"
-          @play-land="playLand"
-          @cast-creature="castCreature"/>
-      <Deck position="bottom" :cardCount="players[0]?.deckCount || 0" />
+      <Battlefield
+    :cards="gameStore.players[1]?.battlefield || []"
+    :playerId="gameStore.players[1]?.id || ''"
+    :opponentId="gameStore.players[0]?.id || ''"
+    @attack="gameStore.attack"
+    @clearAttackingCreatures="gameStore.clearAttackingCreatures"
+  />
+      <PlayerInfo :player="gameStore.players[1] || {}" position="top" />
+    </div>
+    <div class="playmat bottom-playmat">
+      <PlayerInfo :player="gameStore.players[0] || {}" position="bottom" />
+      <Battlefield
+    :cards="gameStore.players[0]?.battlefield || []"
+    :playerId="gameStore.players[0]?.id || ''"
+    :opponentId="gameStore.players[1]?.id || ''"
+    @attack="gameStore.attack"
+    @clearAttackingCreatures="gameStore.clearAttackingCreatures"
+  />
+      <Hand
+        :cards="gameStore.players[0]?.hand || []"
+        :playerId="gameStore.players[0]?.id || ''"
+        @play-land="gameStore.playLand"
+        @cast-creature="gameStore.castCreature"
+      />
+      <Deck position="bottom" :cardCount="gameStore.players[0]?.deckCount || 0" />
     </div>
     <div class="pass-turn-button">
-      <button @click="endTurn">Pass Turn</button>
+      <button @click="gameStore.endTurn">Pass Turn</button>
     </div>
-    <BlockerModal 
-    :showModal="showBlockerModal" 
-    :attacking-creatures="attackingCreatures"
-    :defendingCreatures="defendingCreatures"
-    @blockers-assigned="handleBlockersAssigned"
-    @blockers-cancelled="handleBlockersCancelled"
-  />
+    <BlockerModal
+      :showModal="gameStore.showBlockerModal"
+      :attacking-creatures="gameStore.attackingCreatures"
+      :defendingCreatures="gameStore.defendingCreatures"
+      @blockers-assigned="handleBlockersAssigned"
+      @blockers-cancelled="handleBlockersCancelled"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { useRouter } from 'vue-router'
-import { 
-  getGameState, 
-  endTurn as endTurnAPI, 
-  playLand as playLandAPI,
-  castCreature as castCreatureAPI,
-  attack as attackAPI,
-  assignBlockers as assignBlockersAPI
-} from '@/services/api'
-import PlayerInfo from '@/components/PlayerInfo.vue';
-import Battlefield from '@/components/Battlefield.vue';
-import Hand from '@/components/Hand.vue';
-import Deck from '@/components/Deck.vue';
-import BlockerModal from '@/components/BlockerModal.vue';
+import { onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useGameStore } from '@/stores/gameStore'
+import PlayerInfo from '@/components/PlayerInfo.vue'
+import Battlefield from '@/components/Battlefield.vue'
+import Hand from '@/components/Hand.vue'
+import Deck from '@/components/Deck.vue'
+import BlockerModal from '@/components/BlockerModal.vue'
 
 const route = useRoute()
 const router = useRouter()
-const gameId = ref('')
-const players = ref([])
-const currentPlayer = ref({})
-const isGameOver = ref(false)
-const winner = ref({})
-const showBlockerModal = ref(false);
-const attackingCreatures = ref([])
-const defendingCreatures = ref([])
+const gameStore = useGameStore()
 
 onMounted(async () => {
-  gameId.value = route.params.id
-  try {
-    const response = await getGameState(gameId.value)
-    updateGameState(response.data)
-  } catch (error) {
-    console.error('Error fetching game state:', error)
-  }
+  gameStore.gameId = route.params.id
+  await gameStore.fetchGameState()
 })
 
-function updateGameState(gameState) {
-    players.value = gameState.players
-    currentPlayer.value = gameState.players[gameState.currentPlayerIndex]
-    isGameOver.value = gameState.isGameOver
-    winner.value = gameState.winner
-    console.log('Gamestate updated:', gameState)
-    if (isGameOver.value) {
-    router.push({ name: 'GameOver', params: { winner: winner.value.name } });
-  }
-}
-
-async function endTurn() {
-  try {
-    const response = await endTurnAPI(gameId.value)
-    updateGameState(response.data)
-  } catch (error) {
-    console.error('Error ending turn:', error)
-  }
-}
-
-async function castCreature(creature) {
-  try {
-    const response = await castCreatureAPI(gameId.value, currentPlayer.value.id, creature.id)
-    updateGameState(response.data)
-  } catch (error) {
-    console.error('Error casting creature')
-  }
-}
-
-async function playLand(land) {
-  try {
-    const response = await playLandAPI(gameId.value, currentPlayer.value.id, land.id)
-    updateGameState(response.data)
-  } catch (error) {
-    console.error('Error playing land:', error)
-  }
-}
-
-async function attack(attackingPlayerId, attackingCreatureIds) {
-  try {
-    const response = await attackAPI(gameId.value, attackingPlayerId, attackingCreatureIds);
-    updateGameState(response.data);
-    const attackingPlayer = response.data.players.find(player => player.id === attackingPlayerId);
-    if (attackingPlayer) {
-      attackingCreatures.value = attackingPlayer.battlefield.filter(creature => creature.isAttacking);
-    }
-    const defendingPLayer= response.data.players.find(player => player.id !== attackingPlayerId)
-    if(defendingPLayer)
-    {
-      defendingCreatures.value = defendingPLayer.battlefield.filter(creature => !creature.isAttacking);
-    }
-    promptForBlockers();
-  } catch (error) {
-    console.error('Error attacking', error);
-  }
-}
-
-async function assignBlockers(defendingPlayerId, blockerAssignments) {
-  try {
-    const response = await assignBlockersAPI(gameId.value, defendingPlayerId, blockerAssignments);
-    updateGameState(response.data);
-  } catch (error) {
-    console.error('Error assigning blockers:', error);
-  }
-}
-
-function promptForBlockers() {
-  
-  showBlockerModal.value = true;
-}
-
 function handleBlockersAssigned(blockerAssignments) {
-  showBlockerModal.value = false;
-  const defendingPLayer= players.value.find(player => player.id !== currentPlayer.value.id)
-  assignBlockers(defendingPLayer.id, blockerAssignments);
+  gameStore.showBlockerModal = false
+  const defendingPlayer = gameStore.players.find((player) => player.id !== gameStore.currentPlayer.id)
+  gameStore.assignBlockers(defendingPlayer.id, blockerAssignments)
 }
 
 function handleBlockersCancelled() {
-  showBlockerModal.value = false;
+  gameStore.showBlockerModal = false
 }
-
 </script>
 
 <style scoped>

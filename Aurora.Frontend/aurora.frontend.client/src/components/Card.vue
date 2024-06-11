@@ -1,19 +1,29 @@
-<!-- Card.vue -->
 <template>
   <div :class="['card', cardType, { 'tapped': isTapped, 'attacking': isAttacking }]">
     <span class="card-name">{{ cardName }}, {{ manaCost }}</span>
-    <div class="card-buttons" v-if="isInHand || isCreature || isLand">
-      <button class="play-button" v-if="isInHand && !isLand" @click="playCard">Play</button>
-      <button class="play-button" v-if="isInHand && isLand" @click="playLand">Play</button>
-      <button class="attack-button" v-if="isCreature && !isInHand" @click="toggleAttack">{{ isAttacking ? 'Attacking' : 'Attack' }}</button>
-      <button class="block-button" v-if="isCreature && !isInHand && isBlocked">Block</button>
-      <button class="tap-button" v-if="isLand && !isInHand" @click="toggleTap">{{ isTapped ? 'Untap' : 'Tap' }}</button>
+    <div class="card-buttons" v-if="isInHand">
+      <button class="play-button" v-if="!isLand" @click="gameStore.castCreature(card.id)">Play</button>
+      <button class="play-button" v-if="isLand" @click="gameStore.playLand(card.id)">Play</button>
+    </div>
+    <div class="card-buttons" v-else-if="isCreature">
+      <button
+        class="attack-button"
+        @click="toggleAttack"
+        :class="{ 'attacking': isAttacking }"
+      >
+        {{ isAttacking ? 'Attacking' : 'Attack' }}
+      </button>
+      <button class="block-button" v-if="isBlocked">Block</button>
+    </div>
+    <div class="card-buttons" v-else-if="isLand">
+      <button class="tap-button" @click="toggleTap">{{ isTapped ? 'Untap' : 'Tap' }}</button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { useGameStore } from '@/stores/gameStore'
 
 const props = defineProps({
   card: {
@@ -23,10 +33,10 @@ const props = defineProps({
   isInHand: {
     type: Boolean,
     default: false
-  },
+  }
 })
 
-const emit = defineEmits(['play-land', 'cast-creature', 'toggle-attack'])
+const gameStore = useGameStore()
 
 const isCreature = computed(() => {
   return props.card.type === 'Creature'
@@ -61,19 +71,11 @@ const manaCost = computed(() => {
 })
 
 function toggleTap() {
-  emit('toggle-tap', props.card.id)
+  // Implement tap/untap logic here if needed
 }
 
 function toggleAttack() {
-  emit('toggle-attack', props.card.id)
-}
-
-function playLand() {
-  emit('play-land', props.card)
-}
-
-function playCard() {
-  emit('cast-creature', props.card)
+  // Implement attack logic here if needed
 }
 </script>
   

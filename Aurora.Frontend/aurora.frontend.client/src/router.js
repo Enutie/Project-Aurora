@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import GameView from './views/GameView.vue'
-import GameOverView from '@/views/GameOverView.vue'
-import  CreateGame from './components/CreateGame.vue'
+const GameView = () => import('./views/GameView.vue');
+const GameOverView = () => import('@/views/GameOverView.vue');
+const CreateGame = () => import('./components/CreateGame.vue');
+const NotFoundView = () => import('./views/NotFoundView.vue')
 
 const routes = [
     {
@@ -20,7 +21,13 @@ const routes = [
     name: 'GameOver',
     component: GameOverView,
     props: true,
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: NotFoundView, // Create this component
     }
+    
   ]
   
   const router = createRouter({

@@ -1,38 +1,24 @@
-<!-- Hand.vue -->
 <template>
-    <div class="hand">
-      <Card
-        v-for="(card, index) in cards"
-        :key="index"
-        :card="card"
-        :isInHand="true"
-        @play-land="playLand"
-      @cast-creature="castCreature"
-      />
-    </div>
-  </template>
-  
-  <script setup>
-  import Card from './Card.vue'
+  <div class="hand">
+    <Card
+      v-for="(card, index) in cards"
+      :key="index"
+      :card="card"
+      :isInHand="true"
+    />
+  </div>
+</template>
 
-  const emit = defineEmits(['play-land', 'cast-creature'])
+<script setup>
+import Card from './Card.vue'
 
-  function playLand(card) {
-  emit('play-land', card)
-}
-
-function castCreature(card) {
-  emit('cast-creature', card)
-}
-  
-  defineProps({
-      cards: {
-        type: Array,
-        required: true
-      },
-      })
-
-  </script>
+defineProps({
+  cards: {
+    type: Array,
+    required: true
+  }
+})
+</script>
   
   <style scoped>
   .hand {
