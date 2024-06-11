@@ -20,16 +20,18 @@ import router from '@/router';
   const playerName = ref('')
   
   const createGame = async () => {
-    try {
-      const response = await axios.post('/api/Games', {
-        playerName: playerName.value
-      })
-      const gameId = response.data.gameId
-      router.push({name: 'Game', params: { id: gameId }})
-    } catch (error) {
-      console.error(error)
-    }
+  try {
+    const response = await axios.post('/api/Games/create-game', playerName.value, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    const gameId = response.data.id;
+    router.push({ name: 'Game', params: { id: gameId } });
+  } catch (error) {
+    console.error(error);
   }
+};
   </script>
   
   <style scoped>

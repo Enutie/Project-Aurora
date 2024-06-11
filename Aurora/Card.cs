@@ -3,7 +3,7 @@
     public class Card
     {
         public string Name { get; }
-        public string Id { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
         public Card(string name)
         {

@@ -34,19 +34,43 @@ namespace Aurora
         public bool CanAfford(IEnumerable<Mana> cost)
         {
             var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
+
+            // Calculate the total required colorless mana
+            int colorlessCost = remainingCost.ContainsKey(Mana.Colorless) ? remainingCost[Mana.Colorless] : 0;
+            remainingCost.Remove(Mana.Colorless);
+
             foreach (var (mana, count) in _mana)
             {
                 if (remainingCost.ContainsKey(mana))
                 {
-                    remainingCost[mana] -= count;
-                    if (remainingCost[mana] <= 0)
+                    int costCount = remainingCost[mana];
+                    if (count >= costCount)
                     {
                         remainingCost.Remove(mana);
                     }
+                    else
+                    {
+                        remainingCost[mana] -= count;
+                    }
+                }
+
+                // If there is any remaining count after paying specific mana, use it for colorless mana
+                if (colorlessCost > 0)
+                {
+                    if (count > 0)
+                    {
+                        colorlessCost -= count;
+                        if (colorlessCost < 0)
+                        {
+                            colorlessCost = 0;
+                        }
+                    }
                 }
             }
-            return !remainingCost.Any();
+
+            return !remainingCost.Any() && colorlessCost == 0;
         }
+
 
         public void Spend(IEnumerable<Mana> cost)
         {

@@ -1,13 +1,11 @@
 using Aurora.Server.Models;
-using Aurora.Server.Services;
+using Aurora.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddDbContext<CardContext>(options =>
-                    options.UseSqlServer(builder.Configuration.GetConnectionString("CardContext")));
 
 builder.Services.AddControllers();
 builder.Services.AddSingleton<IGameService, GameService>();

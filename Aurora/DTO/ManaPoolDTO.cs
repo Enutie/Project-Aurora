@@ -8,6 +8,6 @@ namespace Aurora.DTO
 {
     public class ManaPoolDTO
     {
-        public Dictionary<Mana, int> Mana { get; set; }
+        public Dictionary<string, int> Mana { get; set; }
     }
 }

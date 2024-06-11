@@ -10,7 +10,7 @@ namespace Aurora
     {
         public List<Player> Players { get; } = new List<Player>();
         public int currentPlayerIndex { get; set; } = 0;
-        public string Id { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
         private Dictionary<Player, int> _landsPlayedThisTurn = new Dictionary<Player, int>();
         private bool _hasAttackedThisTurn = false;
         public bool IsGameOver { get; private set; }
@@ -104,6 +104,10 @@ namespace Aurora
 
             DrawCard(GetCurrentPlayer());
             CheckWinConditions();
+            if(currentPlayer == Players[1])
+            {
+                TakeAITurn();
+            }
         }
 
         public bool CanPlayLand(Player player)
@@ -147,17 +151,53 @@ namespace Aurora
 
         private void PayMana(List<Land> availableLands, IEnumerable<Mana> cost)
         {
-            foreach (var mana in cost)
+            var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
+
+            // Handle specific mana costs
+            foreach (var mana in cost.Where(m => m != Mana.Colorless))
             {
-                var land = availableLands.First(l => l.ProducedMana == mana);
-                land.IsTapped = true;
-                availableLands.Remove(land);
+                var land = availableLands.FirstOrDefault(l => l.ProducedMana == mana);
+                if (land != null)
+                {
+                    land.IsTapped = true;
+                    availableLands.Remove(land);
+                    remainingCost[mana]--;
+                    if (remainingCost[mana] == 0)
+                    {
+                        remainingCost.Remove(mana);
+                    }
+                }
+            }
+
+            // Handle colorless mana costs
+            if (remainingCost.ContainsKey(Mana.Colorless))
+            {
+                int colorlessCost = remainingCost[Mana.Colorless];
+                remainingCost.Remove(Mana.Colorless);
+
+                foreach (var land in availableLands.ToList())
+                {
+                    if (colorlessCost == 0)
+                        break;
+
+                    land.IsTapped = true;
+                    availableLands.Remove(land);
+                    colorlessCost--;
+                }
             }
         }
+
 
         private bool CanAfford(List<Mana> availableMana, IEnumerable<Mana> cost)
         {
             var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
+            int colorlessCost = remainingCost.ContainsKey(Mana.Colorless) ? remainingCost[Mana.Colorless] : 0;
+
+            if (remainingCost.ContainsKey(Mana.Colorless))
+            {
+                remainingCost.Remove(Mana.Colorless);
+            }
+
             foreach (var mana in availableMana)
             {
                 if (remainingCost.ContainsKey(mana))
@@ -168,9 +208,15 @@ namespace Aurora
                         remainingCost.Remove(mana);
                     }
                 }
+                else if (colorlessCost > 0)
+                {
+                    colorlessCost--;
+                }
             }
-            return !remainingCost.Any();
+
+            return !remainingCost.Any() && colorlessCost == 0;
         }
+
 
         public void TakeAITurn()
         {

@@ -7,8 +7,7 @@
         :cardName="card.name"
         :cardType="card.type"
         :isInHand="true"
-        :index="index"
-        @play-card="cardClicked(card, index)"
+        @play-card="cardClicked(card)"
       />
     </div>
   </template>
@@ -18,11 +17,11 @@
 
   const emit = defineEmits(['play-land', 'cast-creature'])
 
-  function cardClicked(card, index) {
+  function cardClicked(card) {
     if(card.type === 'Land') {
-      emit('play-land', index)
+      emit('play-land', card)
     } else if(card.type === 'Creature') {
-      emit('cast-creature', index)
+      emit('cast-creature', card)
     }
   }
   

@@ -20,6 +20,17 @@ namespace Aurora
             Life -= damage;
         }
 
+        public Player(string name)
+        {
+            Name = name;
+            Deck = DeckFactory.MonoGreenVanilla();
+        }
+
+        public Player()
+        {
+            
+        }
+
         public void PlayLand(Land land)
         {
             Hand.Remove(land);

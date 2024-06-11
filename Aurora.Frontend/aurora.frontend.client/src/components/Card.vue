@@ -22,15 +22,10 @@ const props = defineProps({
   cardType: {
     type: String,
     required: true,
-    validator: value => ['Creature', 'Land'].includes(value)
   },
   isInHand: {
     type: Boolean,
     default: false
-  },
-  index: {
-    type: Number,
-    required: true
   }
 })
 

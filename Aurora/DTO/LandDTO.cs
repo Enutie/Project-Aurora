@@ -8,7 +8,8 @@ namespace Aurora.DTO
 {
     public class LandDTO : CardDTO
     {
-        public LandType Type { get; set; }
+        public string LandType { get; set; }
+        public override string Type { get; set; } = "Land";
         public bool IsTapped { get; set; }
     }
 }

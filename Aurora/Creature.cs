@@ -8,7 +8,7 @@ namespace Aurora
 {
     public class Creature : Card
     {
-        public IEnumerable<Mana> ManaCost { get; }
+        public IEnumerable<Mana> ManaCost { get; set; }
         public int Power { get; set; }
         public int Toughness { get; set; }
         public bool IsAttacking { get; set; }

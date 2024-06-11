@@ -104,6 +104,21 @@ namespace Aurora.Tests
             land.IsTapped.Should().BeTrue();
         }
 
+        [Fact]
+        public void AnyManaShouldBeAbleToPayForColorless()
+        {
+            var game = new Game(new List<Player>() {
+                new Player("Bob"),
+                new Player("AI")
+            });
+
+            game.Players[0].PlayLand(new Land(LandType.Forest));
+            game.SwitchTurn();
+            game.PlayLand(game.Players[0], new Land(LandType.Forest));
+            game.CastCreature(game.Players[0], new Creature("T", new[] { Mana.Green, Mana.Colorless }, 2, 2));
+            game.Players[0].Battlefield.Should().HaveCount(3);
+        }
+
         // Add more tests for the mana system as needed
     }
 }

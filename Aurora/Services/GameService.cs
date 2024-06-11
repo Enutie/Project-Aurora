@@ -20,6 +20,71 @@ namespace Aurora.Services
             _logger = logger;
         }
 
+        private CardDTO ConvertToCardDTO(Card card)
+        {
+            switch (card)
+            {
+                case Creature creature:
+                    return new CreatureDTO
+                    {
+                        Id = creature.Id,
+                        Name = creature.Name,
+                        Power = creature.Power,
+                        Toughness = creature.Toughness,
+                        ManaCost = creature.ManaCost.Select(m => m.ToString()).ToList(),
+                        IsAttacking = creature.IsAttacking,
+                        IsBlocked = creature.IsBlocked,
+                        BlockedBy = creature.BlockedBy != null ? ConvertToCardDTO(creature.BlockedBy) as CreatureDTO : null
+                    };
+
+                case Land land:
+                    return new LandDTO
+                    {
+                        Id = land.Id,
+                        Name = land.Name,
+                        LandType = land.Type.ToString(),
+                        IsTapped = land.IsTapped
+                    };
+
+                default:
+                    return new CardDTO
+                    {
+                        Id = card.Id,
+                        Name = card.Name
+                    };
+            }
+        }
+
+        public GameDTO CreateGame(string playerName)
+        {
+            var game = new Game(new List<Player>() {
+        new Player(playerName),
+        new Player("AI")
+    });
+            _games[game.Id] = game;
+
+            return new GameDTO
+            {
+                Id = game.Id,
+                Players = game.Players.Select(p => new PlayerDTO
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Hand = p.Hand.Select(ConvertToCardDTO).ToList(),
+                    Battlefield = p.Battlefield.Select(ConvertToCardDTO).ToList(),
+                    Life = p.Life
+                }).ToList(),
+                CurrentPlayerIndex = game.currentPlayerIndex,
+                IsGameOver = game.IsGameOver,
+                Winner = game.Winner != null ? new PlayerDTO
+                {
+                    Id = game.Winner.Id,
+                    Name = game.Winner.Name,
+                    Life = game.Winner.Life
+                } : null
+            };
+        }
+
         public GameDTO StartGame(List<PlayerDTO> playerDTOs)
         {
             try
@@ -41,8 +106,8 @@ namespace Aurora.Services
                     {
                         Id = p.Id,
                         Name = p.Name,
-                        Hand = p.Hand.Select(c => new CardDTO { Id = c.Id, Name = c.Name }).ToList(),
-                        Battlefield = p.Battlefield.Select(c => new CardDTO { Id = c.Id, Name = c.Name }).ToList(),
+                        Hand = p.Hand.Select(c => ConvertToCardDTO(c)).ToList(),
+                        Battlefield = p.Battlefield.Select(c => ConvertToCardDTO(c)).ToList(),
                         Life = p.Life
                     }).ToList(),
                     CurrentPlayerIndex = game.currentPlayerIndex,
@@ -77,7 +142,7 @@ namespace Aurora.Services
                     throw new PlayerNotFoundException($"Player with ID '{playerId}' not found in the game.");
                 }
 
-                var land = new Land((LandType)Enum.Parse(typeof(LandType), landDTO.Type.ToString()))
+                var land = new Land((LandType)Enum.Parse(typeof(LandType), landDTO.LandType.ToString()))
                 {
                     Id = landDTO.Id,
                     IsTapped = landDTO.IsTapped
@@ -123,12 +188,16 @@ namespace Aurora.Services
                     throw new PlayerNotFoundException($"Player with ID '{playerId}' not found in the game.");
                 }
 
-                var creature = new Creature(creatureDTO.Name, creatureDTO.ManaCost, creatureDTO.Power, creatureDTO.Toughness)
+                var creature = new Creature(creatureDTO.Name,
+                    creatureDTO.ManaCost.Select(mana => (Mana)Enum.Parse(typeof(Mana), mana)).ToList(), 
+                    creatureDTO.Power, creatureDTO.Toughness)
                 {
                     Id = creatureDTO.Id,
                     IsAttacking = creatureDTO.IsAttacking,
                     IsBlocked = creatureDTO.IsBlocked,
-                    BlockedBy = creatureDTO.BlockedBy != null ? new Creature(creatureDTO.BlockedBy.Name, creatureDTO.BlockedBy.ManaCost, creatureDTO.BlockedBy.Power, creatureDTO.BlockedBy.Toughness)
+                    BlockedBy = creatureDTO.BlockedBy != null ? new Creature(creatureDTO.BlockedBy.Name,
+                    creatureDTO.BlockedBy.ManaCost.Select(mana => (Mana)Enum.Parse(typeof(Mana), mana)).ToList(),
+                    creatureDTO.BlockedBy.Power, creatureDTO.BlockedBy.Toughness)
                     {
                         Id = creatureDTO.BlockedBy.Id
                     } : null
@@ -286,8 +355,8 @@ namespace Aurora.Services
                     {
                         Id = p.Id,
                         Name = p.Name,
-                        Hand = p.Hand.Select(c => new CardDTO { Id = c.Id, Name = c.Name }).ToList(),
-                        Battlefield = p.Battlefield.Select(c => new CardDTO { Id = c.Id, Name = c.Name }).ToList(),
+                        Hand = p.Hand.Select(c => ConvertToCardDTO(c)).ToList(),
+                        Battlefield = p.Battlefield.Select(c => ConvertToCardDTO(c)).ToList(),
                         Life = p.Life
                     }).ToList(),
                     CurrentPlayerIndex = game.currentPlayerIndex,
@@ -331,8 +400,8 @@ namespace Aurora.Services
                 {
                     Id = player.Id,
                     Name = player.Name,
-                    Hand = player.Hand.Select(c => new CardDTO { Id = c.Id, Name = c.Name }).ToList(),
-                    Battlefield = player.Battlefield.Select(c => new CardDTO { Id = c.Id, Name = c.Name }).ToList(),
+                    Hand = player.Hand.Select(c => ConvertToCardDTO(c)).ToList(),
+                    Battlefield = player.Battlefield.Select(c => ConvertToCardDTO(c)).ToList(),
                     Life = player.Life
                 };
             }
@@ -351,6 +420,55 @@ namespace Aurora.Services
                 _logger.LogError(ex, "An error occurred while retrieving player information.");
                 throw new InvalidOperationException("An error occurred while retrieving player information.", ex);
             }
+        }
+
+        public LandDTO GetLandById(string landId)
+        {
+            var game = _games.Values.FirstOrDefault(g => g.Players.Any(p => p.Hand.Any(c => c.Id == landId && c is Land)));
+
+            if (game == null)
+            {
+                return null;
+            }
+
+            var land = game.Players.SelectMany(p => p.Hand).OfType<Land>().FirstOrDefault(l => l.Id == landId);
+
+            if (land == null)
+            {
+                return null;
+            }
+
+            return new LandDTO
+            {
+                Id = land.Id,
+                LandType = land.Type.ToString()
+            };
+        }
+
+        public CreatureDTO GetCreatureById(string creatureId)
+        {
+            var game = _games.Values.FirstOrDefault(g => g.Players.Any(p => p.Hand.Any(c => c.Id == creatureId && c is Creature)));
+
+            if (game == null)
+            {
+                return null;
+            }
+
+            var creature = game.Players.SelectMany(p => p.Hand).OfType<Creature>().FirstOrDefault(c => c.Id == creatureId);
+
+            if (creature == null)
+            {
+                return null;
+            }
+
+            return new CreatureDTO
+            {
+                Id = creature.Id,
+                Name = creature.Name,
+                ManaCost = creature.ManaCost.Select(m => m.ToString()).ToList(),
+                Power = creature.Power,
+                Toughness = creature.Toughness
+            };
         }
     }
 }

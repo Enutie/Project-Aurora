@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Aurora.Server.Requests;
-using Aurora.Server.Services;
+using Aurora.Services;
+using Aurora.DTO;
+using Aurora.Server.Models;
+using Aurora.Exceptions;
 
 namespace Aurora.Controllers
 {
@@ -15,179 +17,88 @@ namespace Aurora.Controllers
             _gameService = gameService;
         }
 
-        [HttpPost]
-        public IActionResult CreateGame([FromBody] CreateGameRequest request)
+        [HttpPost("start")]
+        public IActionResult StartGame([FromBody] List<PlayerDTO> players)
         {
-            var game = _gameService.CreateGame(request.PlayerName);
-            var response = new CreateGameResponse
-            {
-                GameId = game.Id,
-                Players = game.Players.Select(p => new PlayerResponse
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Life = p.Life,
-                    HandCount = p.Hand.Count,
-                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
-                    DeckCount = p.Deck.Cards.Count
-                }).ToList()
-            };
-            return Ok(response);
+            var gameDto = _gameService.StartGame(players);
+            return Ok(gameDto);
         }
 
         [HttpGet("{gameId}")]
         public IActionResult GetGameState(string gameId)
         {
-            var game = _gameService.GetGame(gameId);
-            var response = new GameStateResponse
+            try
             {
-                GameId = game.Id,
-                Players = game.Players.Select(p => new PlayerResponse
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Life = p.Life,
-                    HandCount = p.Hand.Count,
-                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
-                    DeckCount = p.Deck.Cards.Count,
-                    Battlefield = p.Battlefield.Select(c => new CardResponse
-                    {
-                        Id = c.Id,
-                        Name = c.Name,
-                        Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness,
-                        Type = c is Creature ? "Creature" : "Land"
-                    }).ToList()
-                }).ToList(),
-                CurrentPlayer = game.GetCurrentPlayer().Id,
-                IsGameOver = game.IsGameOver,
-                Winner = game.Winner?.Id
-            };
-            return Ok(response);
+                var gameDto = _gameService.GetGameState(gameId);
+                return Ok(gameDto);
+            }
+            catch (GameNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred while retrieving the game state.");
+            }
+
         }
 
-        [HttpPost("{gameId}/play-land")]
-        public IActionResult PlayLand(string gameId, [FromBody] PlayLandRequest request)
+        [HttpPost("create-game")]
+        public IActionResult CreateGame([FromBody] string playerName)
         {
-            var game = _gameService.PlayLand(gameId, request.PlayerId, request.LandIndex);
-            var response = new GameStateResponse
+            var gameDto = _gameService.CreateGame(playerName);
+            return Ok(gameDto);
+        }
+        
+        [HttpPost("{gameId}/play-land")]
+        public IActionResult PlayLand(string gameId, [FromBody] LandPlayDTO landPlayDto)
+        {
+            // Retrieve the LandDTO based on the provided LandId
+            var landDto = _gameService.GetLandById(landPlayDto.LandId);
+
+            if (landDto == null)
             {
-                GameId = game.Id,
-                Players = game.Players.Select(p => new PlayerResponse
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Life = p.Life,
-                    HandCount = p.Hand.Count,
-                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
-                    DeckCount = p.Deck.Cards.Count,
-                    Battlefield = p.Battlefield.Select(c => new CardResponse
-                    {
-                        Id = c.Id,
-                        Name = c.Name,
-                        Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness,
-                        Type = c is Creature ? "Creature" : "Land"
-                    }).ToList()
-                }).ToList(),
-                CurrentPlayer = game.GetCurrentPlayer().Id,
-                IsGameOver = game.IsGameOver,
-                Winner = game.Winner?.Id
-            };
-            return Ok(response);
+                return BadRequest("Invalid land ID");
+            }
+
+            var gameDto = _gameService.PlayLand(gameId, landPlayDto.PlayerId, landDto);
+            return Ok(gameDto);
         }
 
         [HttpPost("{gameId}/cast-creature")]
-        public IActionResult CastCreature(string gameId, [FromBody] CastCreatureRequest request)
+        public IActionResult CastCreature(string gameId, [FromBody] CreatureCastDTO creatureCastDto)
         {
-            var game = _gameService.CastCreature(gameId, request.PlayerId, request.CreatureIndex);
-            var response = new GameStateResponse
+            // Retrieve the CreatureDTO based on the provided CreatureId
+            var creatureDto = _gameService.GetCreatureById(creatureCastDto.CreatureId);
+
+            if (creatureDto == null)
             {
-                GameId = game.Id,
-                Players = game.Players.Select(p => new PlayerResponse
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Life = p.Life,
-                    HandCount = p.Hand.Count,
-                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
-                    DeckCount = p.Deck.Cards.Count,
-                    Battlefield = p.Battlefield.Select(c => new CardResponse
-                    {
-                        Id = c.Id,
-                        Name = c.Name,
-                        Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness,
-                        Type = c is Creature ? "Creature" : "Land"
-                    }).ToList()
-                }).ToList(),
-                CurrentPlayer = game.GetCurrentPlayer().Id,
-                IsGameOver = game.IsGameOver,
-                Winner = game.Winner?.Id
-            };
-            return Ok(response);
+                return BadRequest("Invalid creature ID");
+            }
+
+            var gameDto = _gameService.CastCreature(gameId, creatureCastDto.PlayerId, creatureDto);
+            return Ok(gameDto);
         }
 
         [HttpPost("{gameId}/attack")]
-        public IActionResult Attack(string gameId, [FromBody] AttackRequest request)
+        public IActionResult Attack(string gameId, [FromBody] AttackDTO attackDto)
         {
-            var game = _gameService.Attack(gameId, request.AttackerId, request.DefenderId, request.AttackingCreatureIds);
-            var response = new GameStateResponse
-            {
-                GameId = game.Id,
-                Players = game.Players.Select(p => new PlayerResponse
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Life = p.Life,
-                    HandCount = p.Hand.Count,
-                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
-                    DeckCount = p.Deck.Cards.Count,
-                    Battlefield = p.Battlefield.Select(c => new CardResponse
-                    {
-                        Id = c.Id,
-                        Name = c.Name,
-                        Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness,
-                        Type = c is Creature ? "Creature" : "Land"
-                    }).ToList()
-                }).ToList(),
-                CurrentPlayer = game.GetCurrentPlayer().Id,
-                IsGameOver = game.IsGameOver,
-                Winner = game.Winner?.Id
-            };
-            return Ok(response);
+            var gameDto = _gameService.Attack(gameId, attackDto.AttackingPlayerId, attackDto.AttackingCreatureIds);
+            return Ok(gameDto);
+        }
+
+        [HttpPost("{gameId}/assign-blockers")]
+        public IActionResult AssignBlockers(string gameId, [FromBody] BlockAssignmentDTO blockAssignmentDto)
+        {
+            var gameDto = _gameService.AssignBlockers(gameId, blockAssignmentDto.DefendingPlayerId, blockAssignmentDto.BlockerAssignments);
+            return Ok(gameDto);
         }
 
         [HttpPost("{gameId}/end-turn")]
         public IActionResult EndTurn(string gameId)
         {
-            var game = _gameService.EndTurn(gameId);
-            var response = new GameStateResponse
-            {
-                GameId = game.Id,
-                Players = game.Players.Select(p => new PlayerResponse
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Life = p.Life,
-                    HandCount = p.Hand.Count,
-                    Hand = p.Hand.Select(c => new CardResponse(c)).ToList(),
-                    DeckCount = p.Deck.Cards.Count,
-                    Battlefield = p.Battlefield.Select(c => new CardResponse
-                    {
-                        Id = c.Id,
-                        Name = c.Name,
-                        Power = (c as Creature)?.Power,
-                        Toughness = (c as Creature)?.Toughness,
-                        Type = c is Creature ? "Creature" : "Land"
-                    }).ToList()
-                }).ToList(),
-                CurrentPlayer = game.GetCurrentPlayer().Id,
-                IsGameOver = game.IsGameOver,
-                Winner = game.Winner?.Id
-            };
-            return Ok(response);
+            var gameDto = _gameService.SwitchTurn(gameId);
+            return Ok(gameDto);
         }
     }
 }

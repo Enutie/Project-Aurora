@@ -35,8 +35,7 @@ const props = defineProps({
 const emit = defineEmits(['attack'])
 
 function handleAttack() {
-  const defenderId = props.opponentId
-  emit('attack', props.playerId, defenderId, attackingCreatureIds.value);
+  emit('attack', props.playerId, attackingCreatureIds.value);
 }
 
 const attackingCreatureIds = ref([])

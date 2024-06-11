@@ -50,7 +50,8 @@ import {
   endTurn as endTurnAPI, 
   playLand as playLandAPI,
   castCreature as castCreatureAPI,
-  attack as attackAPI
+  attack as attackAPI,
+  assignBlockers as assignBlockersAPI
 } from '@/services/api'
 import PlayerInfo from '@/components/PlayerInfo.vue';
 import Battlefield from '@/components/Battlefield.vue';
@@ -76,7 +77,7 @@ onMounted(async () => {
 
 function updateGameState(gameState) {
     players.value = gameState.players
-    currentPlayer.value = gameState.players.find(p => p.id === gameState.currentPlayer)
+    currentPlayer.value = gameState.players[gameState.currentPlayerIndex]
     isGameOver.value = gameState.isGameOver
     winner.value = gameState.winner
 }
@@ -90,31 +91,43 @@ async function endTurn() {
   }
 }
 
-async function castCreature(cardIndex) {
+async function castCreature(creature) {
   try {
-    const response = await castCreatureAPI(gameId.value, currentPlayer.value.id, cardIndex)
+    console.log(gameId.value)
+    console.log(currentPlayer.value.id)
+    console.log(creature.id)
+    console.log(creature.manaCost)
+    const response = await castCreatureAPI(gameId.value, currentPlayer.value.id, creature.id, creature.manaCost)
     updateGameState(response.data)
   } catch (error) {
     console.error('Error casting creature')
   }
 }
 
-async function playLand(cardIndex) {
+async function playLand(land) {
   try {
-    const response = await playLandAPI(gameId.value, currentPlayer.value.id, cardIndex)
+    const response = await playLandAPI(gameId.value, currentPlayer.value.id, land.id)
     updateGameState(response.data)
-  } catch (error)
-  {
+  } catch (error) {
     console.error('Error playing land:', error)
   }
 }
 
-async function attack(attackerId, defenderId, attackingCreatureIds) {
+async function attack(attackingPlayerId, attackingCreatureIds){
   try {
-    const response = await attackAPI(gameId.value, attackerId, defenderId, attackingCreatureIds);
+    const response = await attackAPI(gameId.value, attackingPlayerId, attackingCreatureIds)
+    updateGameState(response.data)
+  } catch(error) {
+    console.err('Error attacking', error)
+  }
+}
+
+async function assignBlockers(defendingPlayerId, blockerAssignments) {
+  try {
+    const response = await assignBlockersAPI(gameId.value, defendingPlayerId, blockerAssignments);
     updateGameState(response.data);
   } catch (error) {
-    console.error('Error attacking:', error);
+    console.error('Error assigning blockers:', error);
   }
 }
 
