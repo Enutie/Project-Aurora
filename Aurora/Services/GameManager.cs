@@ -11,14 +11,16 @@ namespace Aurora.Services
 {
 	public class GameManager : IGameManager
 	{
-		private readonly Dictionary<string, Game> _games;
 		private readonly ILogger<GameManager> _logger;
+		private readonly IGameStorage _games;
+        private readonly ICardConverter _cardConverter;
 
-		public GameManager(ILogger<GameManager> logger, Dictionary<string, Game> _games) 
+        public GameManager(ILogger<GameManager> logger, IGameStorage gameStorage, ICardConverter cardConverter) 
 		{
 			this._logger = logger;
-			this._games = _games;
-		}
+			this._games = gameStorage;
+            this._cardConverter = cardConverter;
+        }
 
 		public GameDTO CreateGame(string playerName)
 		{
@@ -26,7 +28,7 @@ namespace Aurora.Services
 		new Player(playerName),
 		new Player("AI")
 	});
-			_games[game.Id] = game;
+			_games.AddGame(game);
 
 			return new GameDTO
 			{
@@ -35,8 +37,8 @@ namespace Aurora.Services
 				{
 					Id = p.Id,
 					Name = p.Name,
-					Hand = p.Hand.Select(ConvertToCardDTO).ToList(),
-					Battlefield = p.Battlefield.Select(ConvertToCardDTO).ToList(),
+					Hand = p.Hand.Select(_cardConverter.ConvertToCardDTO).ToList(),
+					Battlefield = p.Battlefield.Select(_cardConverter.ConvertToCardDTO).ToList(),
 					Life = p.Life
 				}).ToList(),
 				CurrentPlayerIndex = game.currentPlayerIndex,
@@ -54,7 +56,7 @@ namespace Aurora.Services
 		{
 			try
 			{
-				if (!_games.TryGetValue(gameId, out var game))
+				if (!_games.TryGetGame(gameId, out var game))
 				{
 					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
 				}
@@ -66,8 +68,8 @@ namespace Aurora.Services
 					{
 						Id = p.Id,
 						Name = p.Name,
-						Hand = p.Hand.Select(c => ConvertToCardDTO(c)).ToList(),
-						Battlefield = p.Battlefield.Select(c => ConvertToCardDTO(c)).ToList(),
+						Hand = p.Hand.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+						Battlefield = p.Battlefield.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
 						Life = p.Life
 					}).ToList(),
 					CurrentPlayerIndex = game.currentPlayerIndex,
@@ -104,7 +106,7 @@ namespace Aurora.Services
 				}).ToList();
 
 				var game = new Game(players);
-				_games[game.Id] = game;
+				_games.AddGame(game);
 
 				return new GameDTO
 				{
@@ -113,8 +115,8 @@ namespace Aurora.Services
 					{
 						Id = p.Id,
 						Name = p.Name,
-						Hand = p.Hand.Select(c => ConvertToCardDTO(c)).ToList(),
-						Battlefield = p.Battlefield.Select(c => ConvertToCardDTO(c)).ToList(),
+						Hand = p.Hand.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+						Battlefield = p.Battlefield.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
 						Life = p.Life
 					}).ToList(),
 					CurrentPlayerIndex = game.currentPlayerIndex,
@@ -138,7 +140,7 @@ namespace Aurora.Services
 		{
 			try
 			{
-				if (!_games.TryGetValue(gameId, out var game))
+				if (!_games.TryGetGame(gameId, out var game))
 				{
 					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
 				}
@@ -155,41 +157,6 @@ namespace Aurora.Services
 			{
 				_logger.LogError(ex, "An error occurred while switching turns.");
 				throw new InvalidOperationException("An error occurred while switching turns.", ex);
-			}
-		}
-
-		private CardDTO ConvertToCardDTO(Card card)
-		{
-			switch (card)
-			{
-				case Creature creature:
-					return new CreatureDTO
-					{
-						Id = creature.Id,
-						Name = creature.Name,
-						Power = creature.Power,
-						Toughness = creature.Toughness,
-						ManaCost = creature.ManaCost.Select(m => m.ToString()).ToList(),
-						IsAttacking = creature.IsAttacking,
-						IsBlocked = creature.IsBlocked,
-						BlockedBy = creature.BlockedBy != null ? ConvertToCardDTO(creature.BlockedBy) as CreatureDTO : null
-					};
-
-				case Land land:
-					return new LandDTO
-					{
-						Id = land.Id,
-						Name = land.Name,
-						LandType = land.Type.ToString(),
-						IsTapped = land.IsTapped
-					};
-
-				default:
-					return new CardDTO
-					{
-						Id = card.Id,
-						Name = card.Name
-					};
 			}
 		}
 	}

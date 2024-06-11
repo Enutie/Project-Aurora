@@ -12,18 +12,20 @@ namespace Aurora.Services
 	public class PlayerActionService : IPlayerActionService
 	{
 		private readonly ILogger<PlayerActionService> _logger;
-		private readonly Dictionary<string, Game> _games;
+        private readonly IGameStorage _games;
+        private readonly IGameManager _gameManager;
 
-		public PlayerActionService(ILogger<PlayerActionService> _logger, Dictionary<string, Game> _games)
+        public PlayerActionService(ILogger<PlayerActionService> _logger, IGameStorage _games, IGameManager _gameManager)
 		{
 			this._logger = _logger;
-			this._games = _games;
-		}
+            this._games = _games;
+            this._gameManager = _gameManager;
+        }
 		public GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments)
 		{
 			try
 			{
-				if (!_games.TryGetValue(gameId, out var game))
+				if (!_games.TryGetGame(gameId, out var game))
 				{
 					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
 				}
@@ -48,7 +50,7 @@ namespace Aurora.Services
 
 				game.AssignBlockers(defendingPlayer, blockingCreatures);
 
-				return GetGameState(gameId);
+				return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)
 			{
@@ -66,7 +68,7 @@ namespace Aurora.Services
 		{
 			try
 			{
-				if (!_games.TryGetValue(gameId, out var game))
+				if (!_games.TryGetGame(gameId, out var game))
 				{
 					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
 				}
@@ -87,7 +89,7 @@ namespace Aurora.Services
 
 				game.DeclareAttackers(attackingPlayer, attackingCreatures);
 
-				return GetGameState(gameId);
+				return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)
 			{
@@ -115,7 +117,7 @@ namespace Aurora.Services
 		{
 			try
 			{
-				if (!_games.TryGetValue(gameId, out var game))
+				if (!_games.TryGetGame(gameId, out var game))
 				{
 					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
 				}
@@ -142,7 +144,7 @@ namespace Aurora.Services
 				};
 
 				game.CastCreature(player, creature);
-				return GetGameState(gameId);
+				return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)
 			{
@@ -170,7 +172,7 @@ namespace Aurora.Services
 		{
 			try
 			{
-				if (!_games.TryGetValue(gameId, out var game))
+				if (!_games.TryGetGame(gameId, out var game))
 				{
 					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
 				}
@@ -188,7 +190,7 @@ namespace Aurora.Services
 				};
 
 				game.PlayLand(player, land);
-				return GetGameState(gameId);
+				return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)
 			{
