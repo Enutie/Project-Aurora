@@ -39,12 +39,20 @@
     <div class="pass-turn-button">
       <button @click="endTurn">Pass Turn</button>
     </div>
+    <BlockerModal 
+    :showModal="showBlockerModal" 
+    :attacking-creatures="attackingCreatures"
+    :defendingCreatures="defendingCreatures"
+    @blockers-assigned="handleBlockersAssigned"
+    @blockers-cancelled="handleBlockersCancelled"
+  />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { 
   getGameState, 
   endTurn as endTurnAPI, 
@@ -57,13 +65,18 @@ import PlayerInfo from '@/components/PlayerInfo.vue';
 import Battlefield from '@/components/Battlefield.vue';
 import Hand from '@/components/Hand.vue';
 import Deck from '@/components/Deck.vue';
+import BlockerModal from '@/components/BlockerModal.vue';
 
 const route = useRoute()
+const router = useRouter()
 const gameId = ref('')
 const players = ref([])
 const currentPlayer = ref({})
 const isGameOver = ref(false)
 const winner = ref({})
+const showBlockerModal = ref(false);
+const attackingCreatures = ref([])
+const defendingCreatures = ref([])
 
 onMounted(async () => {
   gameId.value = route.params.id
@@ -80,6 +93,10 @@ function updateGameState(gameState) {
     currentPlayer.value = gameState.players[gameState.currentPlayerIndex]
     isGameOver.value = gameState.isGameOver
     winner.value = gameState.winner
+    if (isGameOver.value) {
+      console.log('GAME ENDED WINNER', winner.value.name )
+    router.push({ name: 'GameOver', params: { winner: winner.value.name } });
+  }
 }
 
 async function endTurn() {
@@ -113,12 +130,24 @@ async function playLand(land) {
   }
 }
 
-async function attack(attackingPlayerId, attackingCreatureIds){
+async function attack(attackingPlayerId, attackingCreatureIds) {
   try {
-    const response = await attackAPI(gameId.value, attackingPlayerId, attackingCreatureIds)
-    updateGameState(response.data)
-  } catch(error) {
-    console.err('Error attacking', error)
+    const response = await attackAPI(gameId.value, attackingPlayerId, attackingCreatureIds);
+    updateGameState(response.data);
+    console.log(response.data)
+    console.log('attack called')
+    const attackingPlayer = response.data.players.find(player => player.id === attackingPlayerId);
+    if (attackingPlayer) {
+      attackingCreatures.value = attackingPlayer.battlefield.filter(creature => creature.isAttacking);
+    }
+    const defendingPLayer= response.data.players.find(player => player.id !== attackingPlayerId)
+    if(defendingPLayer)
+    {
+      defendingCreatures.value = defendingPLayer.battlefield.filter(creature => !creature.isAttacking);
+    }
+    promptForBlockers();
+  } catch (error) {
+    console.error('Error attacking', error);
   }
 }
 
@@ -129,6 +158,22 @@ async function assignBlockers(defendingPlayerId, blockerAssignments) {
   } catch (error) {
     console.error('Error assigning blockers:', error);
   }
+}
+
+function promptForBlockers() {
+  
+  console.log('should show modal now')
+  showBlockerModal.value = true;
+}
+
+function handleBlockersAssigned(blockerAssignments) {
+  showBlockerModal.value = false;
+  const defendingPLayer= players.value.find(player => player.id !== currentPlayer.value.id)
+  assignBlockers(defendingPLayer.id, blockerAssignments);
+}
+
+function handleBlockersCancelled() {
+  showBlockerModal.value = false;
 }
 
 </script>

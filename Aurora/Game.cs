@@ -249,6 +249,10 @@ namespace Aurora
 
         public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
         {
+            foreach (var creature in attackingCreatures)
+            {
+                creature.IsAttacking = true;
+            }
             _attackingPlayer = attackingPlayer;
             _attackingCreatures = attackingCreatures;
         }

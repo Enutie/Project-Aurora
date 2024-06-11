@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import GameView from './views/GameView.vue'
-import Example from './components/Example.vue'
+import GameOverView from '@/views/GameOverView.vue'
 import  CreateGame from './components/CreateGame.vue'
 
 const routes = [
@@ -16,9 +16,10 @@ const routes = [
       props: true,
     },
     {
-      path: '/example',
-      name: 'Example',
-      component: Example,
+      path: '/game-over/:winner',
+    name: 'GameOver',
+    component: GameOverView,
+    props: true,
     }
   ]
   
