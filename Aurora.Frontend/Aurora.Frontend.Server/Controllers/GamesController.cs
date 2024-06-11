@@ -68,7 +68,6 @@ namespace Aurora.Controllers
         [HttpPost("{gameId}/cast-creature")]
         public IActionResult CastCreature(string gameId, [FromBody] CreatureCastDTO creatureCastDto)
         {
-            // Retrieve the CreatureDTO based on the provided CreatureId
             var creatureDto = _gameService.GetCreatureById(creatureCastDto.CreatureId);
 
             if (creatureDto == null)

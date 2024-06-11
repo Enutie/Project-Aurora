@@ -3,10 +3,7 @@
     <Card
       v-for="(card, index) in cards"
       :key="index"
-      :cardName="card.name"
-      :cardType="card.type"
-      :index="index"
-      :isAttacking="attackingCreatureIds.includes(card.id)"
+      :card="card"
       @toggle-attack="toggleAttack(index)"
     />
   </div>

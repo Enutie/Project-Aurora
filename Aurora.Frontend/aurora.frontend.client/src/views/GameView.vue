@@ -110,7 +110,7 @@ async function endTurn() {
 
 async function castCreature(creature) {
   try {
-    const response = await castCreatureAPI(gameId.value, currentPlayer.value.id, creature.id, creature.manaCost)
+    const response = await castCreatureAPI(gameId.value, currentPlayer.value.id, creature.id)
     updateGameState(response.data)
   } catch (error) {
     console.error('Error casting creature')

@@ -4,10 +4,10 @@
       <Card
         v-for="(card, index) in cards"
         :key="index"
-        :cardName="card.name"
-        :cardType="card.type"
+        :card="card"
         :isInHand="true"
-        @play-card="cardClicked(card)"
+        @play-land="playLand"
+      @cast-creature="castCreature"
       />
     </div>
   </template>
@@ -17,13 +17,13 @@
 
   const emit = defineEmits(['play-land', 'cast-creature'])
 
-  function cardClicked(card) {
-    if(card.type === 'Land') {
-      emit('play-land', card)
-    } else if(card.type === 'Creature') {
-      emit('cast-creature', card)
-    }
-  }
+  function playLand(card) {
+  emit('play-land', card)
+}
+
+function castCreature(card) {
+  emit('cast-creature', card)
+}
   
   defineProps({
       cards: {

@@ -1,27 +1,24 @@
 <!-- Card.vue -->
 <template>
   <div :class="['card', cardType, { 'tapped': isTapped, 'attacking': isAttacking }]">
-    <span class="card-name">{{ cardName }} </span>
+    <span class="card-name">{{ cardName }}</span>
     <div class="card-buttons" v-if="isInHand || isCreature || isLand">
-      <button class="play-button" v-if="isInHand" @click="playCard">Play</button>
+      <button class="play-button" v-if="isInHand && !isLand" @click="playCard">Play</button>
+      <button class="play-button" v-if="isInHand && isLand" @click="playLand">Play</button>
       <button class="attack-button" v-if="isCreature && !isInHand" @click="toggleAttack">{{ isAttacking ? 'Attacking' : 'Attack' }}</button>
-      <button class="block-button" v-if="isCreature && !isInHand">Block</button>
+      <button class="block-button" v-if="isCreature && !isInHand && isBlocked">Block</button>
       <button class="tap-button" v-if="isLand && !isInHand" @click="toggleTap">{{ isTapped ? 'Untap' : 'Tap' }}</button>
     </div>
   </div>
 </template>
-  
-  <script setup>
-import { computed, ref } from 'vue'
+
+<script setup>
+import { computed } from 'vue'
 
 const props = defineProps({
-  cardName: {
-    type: String,
+  card: {
+    type: Object,
     required: true
-  },
-  cardType: {
-    type: String,
-    required: true,
   },
   isInHand: {
     type: Boolean,
@@ -29,35 +26,52 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['play-card', 'toggle-attack'])
-
-const isAttacking = ref(false);
+const emit = defineEmits(['play-land', 'cast-creature', 'toggle-attack'])
 
 const isCreature = computed(() => {
-  return props.cardType === 'Creature'
+  return props.card.type === 'Creature'
 })
 
 const isLand = computed(() => {
-  return props.cardType === 'Land'
+  return props.card.type === 'Land'
 })
 
-const isTapped = ref(false)
+const cardName = computed(() => {
+  return props.card.name
+})
+
+const cardType = computed(() => {
+  return props.card.type.toLowerCase()
+})
+
+const isTapped = computed(() => {
+  return props.card.isTapped
+})
+
+const isAttacking = computed(() => {
+  return props.card.isAttacking
+})
+
+const isBlocked = computed(() => {
+  return props.card.isBlocked
+})
 
 function toggleTap() {
-  isTapped.value = !isTapped.value
+  emit('toggle-tap', props.card.id)
 }
 
 function toggleAttack() {
-  isAttacking.value = !isAttacking.value;
-  isTapped.value = isAttacking.value; // Update isTapped based on isAttacking
-  emit('toggle-attack');
+  emit('toggle-attack', props.card.id)
+}
+
+function playLand() {
+  emit('play-land', props.card)
 }
 
 function playCard() {
-  emit('play-card', props.index)
+  emit('cast-creature', props.card)
 }
-
-  </script>
+</script>
   
   <style scoped>
 .card {

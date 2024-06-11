@@ -5,20 +5,7 @@ namespace Aurora.Tests
 {
     public class GameTests
     {
-        private Deck GetDeck
-            ()
-        {
-            List<Card> deck = new List<Card>();
-            for (int i = 0; i < 24; i++)
-            {
-                deck.Add(new Land(LandType.Plains));
-            }
-            for (int i = 0; i < 36; i++)
-            {
-                deck.Add(new Creature("Devoted Hero", new[] { Mana.White }, 1, 2));
-            }
-            return new Deck(deck);
-        }
+        
         [Fact]
         public void Game_ShouldStartWithTwoPlayers()
         {

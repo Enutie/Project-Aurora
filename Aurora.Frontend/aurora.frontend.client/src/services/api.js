@@ -14,11 +14,10 @@ export function createGame(playerName) {
     return axios.post(`${API_BASE_URL}/Games/${gameId}/play-land`, { playerId, landId });
   }
   
-  export function castCreature(gameId, playerId, creatureId, manaCost) {
+  export function castCreature(gameId, playerId, creatureId) {
     const requestBody = {
       playerId: playerId,
-      creatureId: creatureId,
-      manaCost: manaCost
+      creatureId: creatureId
     }
     return axios.post(`${API_BASE_URL}/Games/${gameId}/cast-creature`, requestBody);
   }
