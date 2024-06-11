@@ -1,7 +1,7 @@
 <!-- Card.vue -->
 <template>
   <div :class="['card', cardType, { 'tapped': isTapped, 'attacking': isAttacking }]">
-    <span class="card-name">{{ cardName }}</span>
+    <span class="card-name">{{ cardName }}, {{ manaCost }}</span>
     <div class="card-buttons" v-if="isInHand || isCreature || isLand">
       <button class="play-button" v-if="isInHand && !isLand" @click="playCard">Play</button>
       <button class="play-button" v-if="isInHand && isLand" @click="playLand">Play</button>
@@ -54,6 +54,10 @@ const isAttacking = computed(() => {
 
 const isBlocked = computed(() => {
   return props.card.isBlocked
+})
+
+const manaCost = computed(() => {
+  return props.card.manaCost
 })
 
 function toggleTap() {

@@ -11,10 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aurora.Server", "..\Aurora.
 EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "Aurora.Client", "..\Aurora.Frontend\aurora.frontend.client\Aurora.Client.esproj", "{7D8AA5D4-DF79-46C7-87AE-7A3D6CBE3A43}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Borealis.Tests", "..\Borealis.Tests\Borealis.Tests.csproj", "{4BDDCD42-0C72-4CC1-B2C9-9F5EE1D2200B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Borealis", "..\Borealis\Borealis.csproj", "{969D0E7D-E1B2-4CA0-A9E9-69EB0AC66F8F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,14 +35,6 @@ Global
 		{7D8AA5D4-DF79-46C7-87AE-7A3D6CBE3A43}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D8AA5D4-DF79-46C7-87AE-7A3D6CBE3A43}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7D8AA5D4-DF79-46C7-87AE-7A3D6CBE3A43}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{4BDDCD42-0C72-4CC1-B2C9-9F5EE1D2200B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4BDDCD42-0C72-4CC1-B2C9-9F5EE1D2200B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4BDDCD42-0C72-4CC1-B2C9-9F5EE1D2200B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4BDDCD42-0C72-4CC1-B2C9-9F5EE1D2200B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{969D0E7D-E1B2-4CA0-A9E9-69EB0AC66F8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{969D0E7D-E1B2-4CA0-A9E9-69EB0AC66F8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{969D0E7D-E1B2-4CA0-A9E9-69EB0AC66F8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{969D0E7D-E1B2-4CA0-A9E9-69EB0AC66F8F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -116,94 +116,24 @@ namespace Aurora
 
         public void CastCreature(Player player, Creature creature)
         {
-            var availableLands = player.Battlefield.OfType<Land>().Where(l => !l.IsTapped).ToList();
-            var availableMana = availableLands.Select(l => l.ProducedMana).ToList();
-            if (CanAfford(availableMana, creature.ManaCost))
+            var creatureToRemove = player.Hand.FirstOrDefault(c => c.Id == creature.Id);
+            if (creatureToRemove == null)
             {
-                PayMana(availableLands, creature.ManaCost);
+                throw new InvalidOperationException("The creature is not in the player's hand.");
+            }
 
-                // Find the specific creature in the player's hand based on its Id
-                var creatureToRemove = player.Hand.FirstOrDefault(c => c.Id == creature.Id);
-                if (creatureToRemove != null)
-                {
-                    player.Hand.Remove(creatureToRemove);
-                    player.Battlefield.Add(creature);
-                }
+            if (player.ManaPool.CanAfford(creature.ManaCost))
+            {
+                player.ManaPool.Spend(creature.ManaCost);
+
+                player.Hand.Remove(creatureToRemove);
+                player.Battlefield.Add(creature);
             }
             else
             {
                 throw new InvalidOperationException("Player does not have enough mana to cast the creature.");
             }
         }
-
-        private void PayMana(List<Land> availableLands, IEnumerable<Mana> cost)
-        {
-            var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
-
-            // Handle specific mana costs
-            foreach (var mana in cost.Where(m => m != Mana.Colorless))
-            {
-                var land = availableLands.FirstOrDefault(l => l.ProducedMana == mana);
-                if (land != null)
-                {
-                    land.IsTapped = true;
-                    availableLands.Remove(land);
-                    remainingCost[mana]--;
-                    if (remainingCost[mana] == 0)
-                    {
-                        remainingCost.Remove(mana);
-                    }
-                }
-            }
-
-            // Handle colorless mana costs
-            if (remainingCost.ContainsKey(Mana.Colorless))
-            {
-                int colorlessCost = remainingCost[Mana.Colorless];
-                remainingCost.Remove(Mana.Colorless);
-
-                foreach (var land in availableLands.ToList())
-                {
-                    if (colorlessCost == 0)
-                        break;
-
-                    land.IsTapped = true;
-                    availableLands.Remove(land);
-                    colorlessCost--;
-                }
-            }
-        }
-
-
-        private bool CanAfford(List<Mana> availableMana, IEnumerable<Mana> cost)
-        {
-            var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
-            int colorlessCost = remainingCost.ContainsKey(Mana.Colorless) ? remainingCost[Mana.Colorless] : 0;
-
-            if (remainingCost.ContainsKey(Mana.Colorless))
-            {
-                remainingCost.Remove(Mana.Colorless);
-            }
-
-            foreach (var mana in availableMana)
-            {
-                if (remainingCost.ContainsKey(mana))
-                {
-                    remainingCost[mana]--;
-                    if (remainingCost[mana] == 0)
-                    {
-                        remainingCost.Remove(mana);
-                    }
-                }
-                else if (colorlessCost > 0)
-                {
-                    colorlessCost--;
-                }
-            }
-
-            return !remainingCost.Any() && colorlessCost == 0;
-        }
-
 
         public void TakeAITurn()
         {

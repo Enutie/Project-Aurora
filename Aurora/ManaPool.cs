@@ -34,41 +34,35 @@ namespace Aurora
         public bool CanAfford(IEnumerable<Mana> cost)
         {
             var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
-
-            // Calculate the total required colorless mana
             int colorlessCost = remainingCost.ContainsKey(Mana.Colorless) ? remainingCost[Mana.Colorless] : 0;
-            remainingCost.Remove(Mana.Colorless);
 
-            foreach (var (mana, count) in _mana)
+            if (remainingCost.ContainsKey(Mana.Colorless))
+            {
+                remainingCost.Remove(Mana.Colorless);
+            }
+
+            var availableMana = LandsUsed.Where(l => !l.IsTapped).GroupBy(l => l.ProducedMana).ToDictionary(g => g.Key, g => g.Count());
+
+            foreach (var (mana, count) in availableMana)
             {
                 if (remainingCost.ContainsKey(mana))
                 {
-                    int costCount = remainingCost[mana];
-                    if (count >= costCount)
+                    int usedMana = Math.Min(count, remainingCost[mana]);
+                    remainingCost[mana] -= usedMana;
+                    colorlessCost -= count - usedMana;
+
+                    if (remainingCost[mana] <= 0)
                     {
                         remainingCost.Remove(mana);
                     }
-                    else
-                    {
-                        remainingCost[mana] -= count;
-                    }
                 }
-
-                // If there is any remaining count after paying specific mana, use it for colorless mana
-                if (colorlessCost > 0)
+                else
                 {
-                    if (count > 0)
-                    {
-                        colorlessCost -= count;
-                        if (colorlessCost < 0)
-                        {
-                            colorlessCost = 0;
-                        }
-                    }
+                    colorlessCost -= count;
                 }
             }
 
-            return !remainingCost.Any() && colorlessCost == 0;
+            return !remainingCost.Any() && colorlessCost <= 0;
         }
 
 
@@ -79,12 +73,38 @@ namespace Aurora
                 throw new InvalidOperationException("Insufficient mana to spend.");
             }
 
+            var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
+
             foreach (var mana in cost)
             {
-                _mana[mana]--;
-                if (_mana[mana] == 0)
+                if (mana == Mana.Colorless)
+                    continue;
+
+                var landToTap = LandsUsed.FirstOrDefault(l => l.ProducedMana == mana && !l.IsTapped);
+                if (landToTap != null)
                 {
-                    _mana.Remove(mana);
+                    landToTap.IsTapped = true;
+                    remainingCost[mana]--;
+                    if (remainingCost[mana] == 0)
+                    {
+                        remainingCost.Remove(mana);
+                    }
+                }
+            }
+
+            // Spend colorless mana
+            int colorlessCost = remainingCost.ContainsKey(Mana.Colorless) ? remainingCost[Mana.Colorless] : 0;
+            while (colorlessCost > 0)
+            {
+                var landToTap = LandsUsed.FirstOrDefault(l => !l.IsTapped);
+                if (landToTap != null)
+                {
+                    landToTap.IsTapped = true;
+                    colorlessCost--;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Insufficient mana to spend.");
                 }
             }
         }

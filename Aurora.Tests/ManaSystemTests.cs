@@ -132,6 +132,207 @@ namespace Aurora.Tests
             game.Players[0].Battlefield.Should().HaveCount(3);
         }
 
-        // Add more tests for the mana system as needed
+        [Fact]
+        public void Player_ShouldPlayTwoCreaturesWithDifferentManaCosts()
+        {
+            // Arrange
+            var game = new Game(new List<Player>()
+    {
+        new Player("Bob"),
+        new Player("AI")
+    });
+            var player = game.GetCurrentPlayer();
+
+            for (int i = 0; i < 4; i++)
+            {
+                var land = new Land(LandType.Forest);
+                player.Hand.Add(land);
+                player.PlayLand(land);
+            }
+
+            var creature1 = new Creature("Creature 1", new[] { Mana.Green, Mana.Colorless }, 1, 1);
+            var creature2 = new Creature("Creature 2", new[] { Mana.Green, Mana.Green }, 2, 2);
+            player.Hand.Add(creature1);
+            player.Hand.Add(creature2);
+
+            // Act
+            game.CastCreature(player, creature1);
+            game.CastCreature(player, creature2);
+
+            // Assert
+            player.Battlefield.Should().Contain(creature1);
+            player.Battlefield.Should().Contain(creature2);
+            player.Hand.Should().NotContain(creature1);
+            player.Hand.Should().NotContain(creature2);
+            player.Battlefield.OfType<Land>().Count(l => l.IsTapped).Should().Be(4);
+        }
+
+        [Fact]
+        public void Player_CannotPlayCreatureWithInsufficientMana()
+        {
+            // Arrange
+            var game = new Game(new List<Player>()
+    {
+        new Player("Bob"),
+        new Player("AI")
+    });
+            var player = game.GetCurrentPlayer();
+            var land = new Land(LandType.Forest);
+            player.Hand.Add(land);
+            game.PlayLand(player, land);
+
+            var creature = new Creature("Expensive Creature", new[] { Mana.Green, Mana.Green, Mana.Colorless }, 3, 3);
+            player.Hand.Add(creature);
+
+            // Act & Assert
+            Assert.Throws<InvalidOperationException>(() => game.CastCreature(player, creature));
+            player.Battlefield.Should().NotContain(creature);
+            player.Hand.Should().Contain(creature);
+        }
+
+        [Fact]
+        public void Player_CannotPlayCreatureNotInHand()
+        {
+            // Arrange
+            var game = new Game(new List<Player>()
+    {
+        new Player("Bob"),
+        new Player("AI")
+    });
+            var player = game.GetCurrentPlayer();
+            var land = new Land(LandType.Forest);
+            player.Hand.Add(land);
+            game.PlayLand(player, land);
+
+            var creature = new Creature("Phantom Creature", new[] { Mana.Green }, 1, 1);
+
+            // Act & Assert
+            Assert.Throws<InvalidOperationException>(() => game.CastCreature(player, creature));
+            player.Battlefield.Should().NotContain(creature);
+            player.Hand.Should().NotContain(creature);
+        }
+
+        [Fact]
+        public void Player_CannotCastCreatureWithWrongMana()
+        {
+            // Arrange
+            var game = new Game(new List<Player>()
+    {
+        new Player("Bob"),
+        new Player("AI")
+    });
+            var player = game.GetCurrentPlayer();
+
+            for (int i = 0; i < 2; i++)
+            {
+                var land = new Land(LandType.Forest);
+                player.Hand.Add(land);
+                game.PlayLand(player, land);
+                game.SwitchTurn();
+            }
+
+            var creature = new Creature("Mixed Mana Creature", new[] { Mana.Green, Mana.Red }, 2, 2);
+            player.Hand.Add(creature);
+
+            // Act & Assert
+            Assert.Throws<InvalidOperationException>(() => game.CastCreature(player, creature));
+            player.Battlefield.Should().NotContain(creature);
+            player.Hand.Should().Contain(creature);
+            player.Battlefield.OfType<Land>().Count(l => l.IsTapped).Should().Be(0);
+        }
+
+        [Fact]
+        public void Player_CanCastCreatureWithSpecificAndColorlessMana()
+        {
+            // Arrange
+            var game = new Game(new List<Player>()
+    {
+        new Player("Bob"),
+        new Player("AI")
+    });
+            var player = game.GetCurrentPlayer();
+
+            for (int i = 0; i < 4; i++)
+            {
+                var land = new Land(LandType.Forest);
+                player.Hand.Add(land);
+                game.PlayLand(player, land);
+                game.SwitchTurn();
+            }
+
+            var creature = new Creature("Specific and Colorless Mana Creature", new[] { Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 3, 3);
+            player.Hand.Add(creature);
+
+            // Act
+            game.CastCreature(player, creature);
+
+            // Assert
+            player.Battlefield.Should().Contain(creature);
+            player.Hand.Should().NotContain(creature);
+            player.Battlefield.OfType<Land>().Count(l => l.IsTapped).Should().Be(4);
+        }
+
+        [Fact]
+        public void Player_CanCastCreatureWithColorlessMana()
+        {
+            // Arrange
+            var game = new Game(new List<Player>()
+    {
+        new Player("Bob"),
+        new Player("AI")
+    });
+            var player = game.GetCurrentPlayer();
+
+            for (int i = 0; i < 4; i++)
+            {
+                var land = new Land(LandType.Forest);
+                player.Hand.Add(land);
+                game.PlayLand(player, land);
+                game.SwitchTurn();
+            }
+
+            var creature = new Creature("Colorless Mana Creature", new[] { Mana.Colorless, Mana.Colorless }, 3, 3);
+            player.Hand.Add(creature);
+
+            // Act
+            game.CastCreature(player, creature);
+
+            // Assert
+            player.Battlefield.Should().Contain(creature);
+            player.Hand.Should().NotContain(creature);
+            player.Battlefield.OfType<Land>().Count(l => l.IsTapped).Should().Be(2);
+        }
+
+        [Fact]
+        public void Player_CanCastCreatureWithColorlessManaEvenThoughTheyDidntPlayALandThatTurn()
+        {
+            // Arrange
+            var game = new Game(new List<Player>()
+    {
+        new Player("Bob"),
+        new Player("AI")
+    });
+            var player = game.GetCurrentPlayer();
+
+            for (int i = 0; i < 2; i++)
+            {
+                var land = new Land(LandType.Forest);
+                player.Hand.Add(land);
+                game.PlayLand(player, land);
+                game.SwitchTurn();
+            }
+            game.SwitchTurn();
+
+            var creature = new Creature("Colorless Mana Creature", new[] { Mana.Colorless, Mana.Colorless }, 3, 3);
+            player.Hand.Add(creature);
+
+            // Act
+            game.CastCreature(player, creature);
+
+            // Assert
+            player.Battlefield.Should().Contain(creature);
+            player.Hand.Should().NotContain(creature);
+            player.Battlefield.OfType<Land>().Count(l => l.IsTapped).Should().Be(2);
+        }
     }
 }
