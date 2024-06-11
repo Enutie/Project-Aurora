@@ -278,6 +278,7 @@ namespace Aurora
                 {
                     _defendingPlayer.TakeDamage(attackingCreature.Power);
                 }
+                attackingCreature.IsAttacking = false;
             }
 
             _attackingCreatures.Clear();

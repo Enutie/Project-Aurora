@@ -26,7 +26,7 @@ const props = defineProps({
   isInHand: {
     type: Boolean,
     default: false
-  }
+  },
 })
 
 const emit = defineEmits(['play-card', 'toggle-attack'])
@@ -48,8 +48,9 @@ function toggleTap() {
 }
 
 function toggleAttack() {
-  isAttacking.value = !isAttacking.value
-  emit('toggle-attack')
+  isAttacking.value = !isAttacking.value;
+  isTapped.value = isAttacking.value; // Update isTapped based on isAttacking
+  emit('toggle-attack');
 }
 
 function playCard() {

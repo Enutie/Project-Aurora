@@ -20,7 +20,6 @@ export function createGame(playerName) {
       creatureId: creatureId,
       manaCost: manaCost
     }
-    console.log(requestBody)
     return axios.post(`${API_BASE_URL}/Games/${gameId}/cast-creature`, requestBody);
   }
   

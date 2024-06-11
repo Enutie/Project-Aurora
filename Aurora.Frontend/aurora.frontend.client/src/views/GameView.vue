@@ -93,8 +93,8 @@ function updateGameState(gameState) {
     currentPlayer.value = gameState.players[gameState.currentPlayerIndex]
     isGameOver.value = gameState.isGameOver
     winner.value = gameState.winner
+    console.log('Gamestate updated:', gameState)
     if (isGameOver.value) {
-      console.log('GAME ENDED WINNER', winner.value.name )
     router.push({ name: 'GameOver', params: { winner: winner.value.name } });
   }
 }
@@ -110,10 +110,6 @@ async function endTurn() {
 
 async function castCreature(creature) {
   try {
-    console.log(gameId.value)
-    console.log(currentPlayer.value.id)
-    console.log(creature.id)
-    console.log(creature.manaCost)
     const response = await castCreatureAPI(gameId.value, currentPlayer.value.id, creature.id, creature.manaCost)
     updateGameState(response.data)
   } catch (error) {
@@ -134,8 +130,6 @@ async function attack(attackingPlayerId, attackingCreatureIds) {
   try {
     const response = await attackAPI(gameId.value, attackingPlayerId, attackingCreatureIds);
     updateGameState(response.data);
-    console.log(response.data)
-    console.log('attack called')
     const attackingPlayer = response.data.players.find(player => player.id === attackingPlayerId);
     if (attackingPlayer) {
       attackingCreatures.value = attackingPlayer.battlefield.filter(creature => creature.isAttacking);
@@ -162,7 +156,6 @@ async function assignBlockers(defendingPlayerId, blockerAssignments) {
 
 function promptForBlockers() {
   
-  console.log('should show modal now')
   showBlockerModal.value = true;
 }
 
