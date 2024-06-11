@@ -12,7 +12,7 @@ namespace Aurora
         public int currentPlayerIndex { get; set; } = 0;
         public string Id { get; set; } = Guid.NewGuid().ToString();
         private Dictionary<Player, int> _landsPlayedThisTurn = new Dictionary<Player, int>();
-        private bool _hasAttackedThisTurn = false;
+        public bool _hasAttackedThisTurn = false;
         public bool IsGameOver { get; private set; }
         public Player Winner { get; private set; }
 
@@ -282,6 +282,7 @@ namespace Aurora
 
             _attackingCreatures.Clear();
             _blockingCreatures.Clear();
+            _hasAttackedThisTurn = true;
 
             CheckWinConditions();
         }

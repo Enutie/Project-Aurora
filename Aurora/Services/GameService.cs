@@ -243,6 +243,11 @@ namespace Aurora.Services
                     throw new PlayerNotFoundException($"Attacking player with ID '{attackingPlayerId}' not found in the game.");
                 }
 
+                if(game._hasAttackedThisTurn)
+                {
+                    throw new InvalidMoveException($"{game.GetCurrentPlayer().Name} has already attacked this turn");
+                }
+
                 var attackingCreatures = attackingPlayer.Battlefield.OfType<Creature>()
                     .Where(c => attackingCreatureIds.Contains(c.Id)).ToList();
 
