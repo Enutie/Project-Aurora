@@ -10,13 +10,19 @@ namespace Aurora.Tests
         public void Player_ShouldNotBeAllowedToPlayMoreThanOneLandPerTurn()
         {
             // Arrange
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>()
+            {
+                new Player("Bob"),
+                new Player("AI")
+            });
             var currentPlayer = game.GetCurrentPlayer();
-            currentPlayer.Hand.Add(new Land(LandType.Plains));
-            currentPlayer.Hand.Add(new Land(LandType.Island));
+            var land = new Land(LandType.Plains);
+            var land2 = new Land(LandType.Island);
+            currentPlayer.Hand.Add(land);
+            currentPlayer.Hand.Add(land2);
 
             // Act
-            game.PlayLand(currentPlayer, new Land(LandType.Plains));
+            game.PlayLand(currentPlayer, land);
             var canPlayAnotherLand = game.CanPlayLand(currentPlayer);
 
             // Assert

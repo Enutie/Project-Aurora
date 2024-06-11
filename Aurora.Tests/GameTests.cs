@@ -23,7 +23,11 @@ namespace Aurora.Tests
         public void Game_ShouldStartWithTwoPlayers()
         {
             // Arrange
-            var game = new Game(GetDeck());
+            var game = new Game(new List<Player>()
+            {
+                new Player("Bob"),
+                new Player("AI")
+            });
 
             // Act
             var playerCount = game.Players.Count;
@@ -36,7 +40,7 @@ namespace Aurora.Tests
         public void Game_ShouldAllowPlayerToPlayLand()
         {
             // Arrange
-            var game = new Game(GetDeck());
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
             var player = game.Players[0];
             var land = new Land(LandType.Plains);
             player.Hand.Add(land);

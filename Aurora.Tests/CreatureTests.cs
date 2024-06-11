@@ -29,7 +29,7 @@ namespace Aurora.Tests
         public void Creature_ShouldBeCastFromHand()
         {
             // Arrange
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
             var player = game.Players[0];
             var creature = new Creature("Devoted Hero", new[] { Mana.White }, 1, 2);
             var land = new Land(LandType.Plains);

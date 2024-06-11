@@ -30,6 +30,7 @@ namespace Aurora
             {
                 cards.Add(new Creature("Woodland Druid", new[] { Mana.Green }, 1, 2));
                 cards.Add(new Creature("Bear Cub", new[] { Mana.Green, Mana.Colorless }, 2, 2));
+                cards.Add(new Creature("Barbary Apes", new[] { Mana.Green, Mana.Colorless }, 2, 2));
                 cards.Add(new Creature("Cylian Elf", new[] { Mana.Green, Mana.Colorless }, 2, 2));
                 cards.Add(new Creature("Alpine Grizzly", new[] {Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless}, 4, 2));
                 cards.Add(new Creature("Centaur Courser", new[] { Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 3, 3));
@@ -37,6 +38,7 @@ namespace Aurora
             }
             for(int i = 0; i < 2; i++)
             {
+                cards.Add(new Creature("Delighted Killbot", new[] { Mana.Colorless, Mana.Colorless }, 2, 1));
                 cards.Add(new Creature("Broodhunter Wurm", new[] { Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 4, 3));
                 cards.Add(new Creature("Feral Krushok", new[] { Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 5, 4));
                 cards.Add(new Creature("Alpha Tyrranax", new[] { Mana.Green, Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 6, 5));

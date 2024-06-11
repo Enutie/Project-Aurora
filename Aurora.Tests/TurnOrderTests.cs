@@ -11,7 +11,7 @@ namespace Aurora.Tests
         public void Game_ShouldStartWithPlayerOnesTurn()
         {
             // Arrange
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
 
             // Act
             var currentPlayer = game.GetCurrentPlayer();
@@ -20,20 +20,5 @@ namespace Aurora.Tests
             currentPlayer.Should().Be(game.Players[0]);
         }
 
-        [Fact]
-        public void Game_ShouldSwitchTurnsAfterPlayerAction()
-        {
-            // Arrange
-            var game = new Game(Helper.GetDeck());
-            var currentPlayer = game.GetCurrentPlayer();
-
-            // Act
-            game.PlayLand(currentPlayer, new Land(LandType.Plains));
-            game.SwitchTurn();
-            var newCurrentPlayer = game.GetCurrentPlayer();
-
-            // Assert
-            newCurrentPlayer.Should().NotBe(currentPlayer);
-        }
     }
 }

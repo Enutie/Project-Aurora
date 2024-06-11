@@ -11,6 +11,7 @@ namespace Aurora.Tests
             // Arrange
             var land = new Land(LandType.Forest);
             var player = new Player();
+            player.Hand.Add(land);
 
             // Act
             player.PlayLand(land);
@@ -24,9 +25,10 @@ namespace Aurora.Tests
         public void Player_ShouldTapLandsWhenCastingCreature()
         {
             // Arrange
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
             var player = game.GetCurrentPlayer();
             var land = new Land(LandType.Forest);
+            player.Hand.Add(land);
             player.PlayLand(land);
             var creature = new Creature("Test Creature", new[] { Mana.Green }, 1, 1);
             player.Hand.Add(creature);
@@ -46,6 +48,7 @@ namespace Aurora.Tests
             // Arrange
             var player = new Player();
             var land = new Land(LandType.Forest);
+            player.Hand.Add(land);
             player.PlayLand(land);
             var manaCost = new[] { Mana.Green, Mana.Green };
 
@@ -57,9 +60,10 @@ namespace Aurora.Tests
         public void Game_ShouldUntapLandsAtBeginningOfTurn()
         {
             // Arrange
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
             var player = game.GetCurrentPlayer();
             var land = new Land(LandType.Forest);
+            player.Hand.Add(land);
             player.PlayLand(land);
 
             // Act
@@ -74,7 +78,7 @@ namespace Aurora.Tests
         public void Player_ShouldNotCastCreatureWithInsufficientMana()
         {
             // Arrange
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
             var player = game.GetCurrentPlayer();
             var creature = new Creature("Test Creature", new[] { Mana.Green, Mana.Green }, 2, 2);
             player.Hand.Add(creature);
@@ -87,7 +91,11 @@ namespace Aurora.Tests
         public void Player_ShouldCastCreatureWithSufficientMana()
         {
             // Arrange
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>()
+            {
+                new Player("Bob"),
+                new Player("AI")
+            });
             var player = game.GetCurrentPlayer();
             var land = new Land(LandType.Forest);
             player.Hand.Add(land);
@@ -111,11 +119,16 @@ namespace Aurora.Tests
                 new Player("Bob"),
                 new Player("AI")
             });
-
-            game.Players[0].PlayLand(new Land(LandType.Forest));
+            var land = new Land(LandType.Forest);
+            game.Players[0].Hand.Add(land);
+            game.Players[0].PlayLand(land);
             game.SwitchTurn();
-            game.PlayLand(game.Players[0], new Land(LandType.Forest));
-            game.CastCreature(game.Players[0], new Creature("T", new[] { Mana.Green, Mana.Colorless }, 2, 2));
+            var land2 = new Land(LandType.Forest);
+            game.Players[0].Hand.Add(land2);
+            game.PlayLand(game.Players[0], land2);
+            var creature = new Creature("T", new[] { Mana.Green, Mana.Colorless }, 2, 2);
+            game.Players[0].Hand.Add(creature);
+            game.CastCreature(game.Players[0], creature);
             game.Players[0].Battlefield.Should().HaveCount(3);
         }
 

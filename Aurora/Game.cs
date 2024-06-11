@@ -21,24 +21,6 @@ namespace Aurora
         private List<Creature> _attackingCreatures;
         private Dictionary<Creature, Creature> _blockingCreatures;
 
-        public Game(Deck deck)
-        {
-            Players = new List<Player>();
-
-            var deck1 = deck;
-            var deck2 = new Deck(deck.Cards);
-
-            deck1.Shuffle();
-            var player1 = new Player { Deck = deck1 };
-            DrawStartingHand(player1);
-            Players.Add(player1);
-
-            deck2.Shuffle();
-            var player2 = new Player { Deck = deck2 };
-            DrawStartingHand(player2);
-            Players.Add(player2);
-        }
-
         public Game(List<Player> players)
         {
             Players = players;
@@ -286,61 +268,6 @@ namespace Aurora
             _hasAttackedThisTurn = true;
 
             CheckWinConditions();
-        }
-
-        public void Attack(Player attacker, Player defender, List<Creature> attackingCreatures)
-        {
-            if (attacker != GetCurrentPlayer())
-            {
-                throw new InvalidOperationException("Only the current player can attack.");
-            }
-
-            if (_hasAttackedThisTurn)
-            {
-                throw new InvalidOperationException("Player has already attacked this turn.");
-            }
-
-            foreach (var creature in attackingCreatures)
-            {
-                if (!attacker.Battlefield.Contains(creature))
-                {
-                    throw new InvalidOperationException("Cannot attack with a creature that is not on the attacker's battlefield.");
-                }
-            }
-
-            // Assign the attacking creatures
-            foreach (var creature in attackingCreatures)
-            {
-                creature.IsAttacking = true;
-            }
-
-            // Prompt the defender to assign blockers (this will be handled by the AI or the defending player)
-            var blockingCreatures = defender.AssignBlockers(attackingCreatures);
-
-            // Resolve combat damage
-            foreach (var creature in attackingCreatures)
-            {
-                if (creature.IsBlocked)
-                {
-                    var blocker = creature.BlockedBy;
-                    creature.DealDamage(blocker);
-                    blocker.DealDamage(creature);
-                }
-                else
-                {
-                    defender.TakeDamage(creature.Power);
-                }
-            }
-
-            // Clear the attacking/blocking status
-            foreach (var creature in attackingCreatures)
-            {
-                creature.IsAttacking = false;
-                creature.IsBlocked = false;
-                creature.BlockedBy = null;
-            }
-
-            _hasAttackedThisTurn = true;
         }
     }
 }

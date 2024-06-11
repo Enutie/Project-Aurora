@@ -12,7 +12,7 @@ namespace Aurora.Tests
             // Arrange
 
             // Act
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
 
             // Assert
             game.Players.Count.Should().Be(2);

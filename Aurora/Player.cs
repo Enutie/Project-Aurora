@@ -33,7 +33,8 @@ namespace Aurora
 
         public void PlayLand(Land land)
         {
-            var landToRemove = Hand.FirstOrDefault(l => l.Id == land.Id);
+            Land landToRemove = (Land)Hand.FirstOrDefault(l => l.Id == land.Id);
+            landToRemove.IsTapped = false;
             if (landToRemove != null)
             {
                 Hand.Remove(landToRemove);

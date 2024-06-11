@@ -14,7 +14,7 @@ namespace Aurora.Tests
         public void Game_ShouldEndWhenPlayerReaches0Life()
         {
             // Arrange
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
             var player = game.Players[0];
             player.Life = 1;
 
@@ -31,7 +31,7 @@ namespace Aurora.Tests
         public void Game_ShouldEndWhenPlayerHasEmptyDeck()
         {
             // Arrange
-            var game = new Game(Helper.GetDeck());
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
             var player = game.Players[0];
             player.Deck.Cards.Clear();
 
