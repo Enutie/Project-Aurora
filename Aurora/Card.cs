@@ -4,6 +4,7 @@
     {
         public string Name { get; }
         public string Id { get; set; } = Guid.NewGuid().ToString();
+        public bool IsTapped { get; set; } = false;
 
         public Card(string name)
         {
@@ -23,7 +24,6 @@
     public class Land : Card
     {
         public LandType Type { get; }
-        public bool IsTapped { get; set; }
         public Mana ProducedMana => Type switch
         {
             LandType.Plains => Mana.White,

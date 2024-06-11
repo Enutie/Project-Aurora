@@ -10,6 +10,5 @@ namespace Aurora.DTO
     {
         public string LandType { get; set; }
         public override string Type { get; set; } = "Land";
-        public bool IsTapped { get; set; }
     }
 }

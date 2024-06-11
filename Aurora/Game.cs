@@ -84,9 +84,14 @@ namespace Aurora
                 land.IsTapped = false;
             }
 
+            foreach (var creature in currentPlayer.Battlefield.OfType<Creature>())
+            {
+                creature.IsTapped = false; // Untap all creatures for the current player
+            }
+
             DrawCard(GetCurrentPlayer());
             CheckWinConditions();
-            if(currentPlayer == Players[1])
+            if (currentPlayer == Players[1])
             {
                 TakeAITurn();
             }
@@ -163,7 +168,15 @@ namespace Aurora
         {
             foreach (var creature in attackingCreatures)
             {
-                creature.IsAttacking = true;
+                if (!creature.IsTapped) // Check if the creature is not already tapped
+                {
+                    creature.IsAttacking = true;
+                    creature.IsTapped = true; // Tap the creature when it attacks
+                }
+                else
+                {
+                    throw new InvalidOperationException("Cannot declare a tapped creature as an attacker.");
+                }
             }
             _attackingPlayer = attackingPlayer;
             _attackingCreatures = attackingCreatures;

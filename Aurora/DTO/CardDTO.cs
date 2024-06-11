@@ -14,6 +14,7 @@ namespace Aurora.DTO
     {
         public string Id { get; set; }
         public string Name { get; set; }
+        public bool IsTapped { get; set; } = false;
         public virtual string Type { get; set; } = "Card";
     }
 }

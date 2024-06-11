@@ -21,6 +21,7 @@ namespace Aurora.Services
                         Power = creature.Power,
                         Toughness = creature.Toughness,
                         ManaCost = creature.ManaCost.Select(m => m.ToString()).ToList(),
+                        IsTapped = creature.IsTapped,
                         IsAttacking = creature.IsAttacking,
                         IsBlocked = creature.IsBlocked,
                         BlockedBy = creature.BlockedBy != null ? ConvertToCardDTO(creature.BlockedBy) as CreatureDTO : null
