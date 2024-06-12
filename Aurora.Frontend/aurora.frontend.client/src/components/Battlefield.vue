@@ -4,13 +4,13 @@
       v-for="(card, index) in cards"
       :key="index"
       :card="card"
-      @toggle-attack="toggleAttack(index)"
+      @toggle-attack="toggleAttack"
     />
   </div>
   <button
     class="attack-button"
     @click="handleAttack"
-    :disabled="attackingCreatureIds.length === 0"
+    :disabled="gameStore.attackingCreatureIds.length === 0"
   >
     Attack
   </button>
@@ -18,7 +18,6 @@
 
 <script setup>
 import Card from './Card.vue'
-import { ref } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 
 const props = defineProps({
@@ -36,23 +35,15 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['attack', 'clearAttackingCreatures'])
 
 const gameStore = useGameStore()
-const attackingCreatureIds = ref([])
 
-function toggleAttack(index) {
-  const creatureId = props.cards[index].id
-  const creatureIndex = attackingCreatureIds.value.indexOf(creatureId)
-  if (creatureIndex === -1) {
-    attackingCreatureIds.value.push(creatureId)
-  } else {
-    attackingCreatureIds.value.splice(creatureIndex, 1)
-  }
+function toggleAttack(cardId) {
+  gameStore.toggleAttack(cardId)
 }
 
 function handleAttack() {
-  emit('attack', props.playerId, attackingCreatureIds.value, props.opponentId)
+  gameStore.attack(props.playerId, gameStore.attackingCreatureIds, props.opponentId)
 }
 </script>
 

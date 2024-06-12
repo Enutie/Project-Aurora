@@ -12,8 +12,6 @@
     :cards="gameStore.players[1]?.battlefield || []"
     :playerId="gameStore.players[1]?.id || ''"
     :opponentId="gameStore.players[0]?.id || ''"
-    @attack="gameStore.attack"
-    @clearAttackingCreatures="gameStore.clearAttackingCreatures"
   />
       <PlayerInfo :player="gameStore.players[1] || {}" position="top" />
     </div>
@@ -23,8 +21,6 @@
     :cards="gameStore.players[0]?.battlefield || []"
     :playerId="gameStore.players[0]?.id || ''"
     :opponentId="gameStore.players[1]?.id || ''"
-    @attack="gameStore.attack"
-    @clearAttackingCreatures="gameStore.clearAttackingCreatures"
   />
       <Hand
         :cards="gameStore.players[0]?.hand || []"

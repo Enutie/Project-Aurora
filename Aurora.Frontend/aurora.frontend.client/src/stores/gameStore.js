@@ -38,11 +38,14 @@ export const useGameStore = defineStore('game', {
     },
     clearAttackingCreatures() {
       this.attackingCreatureIds = []
+      this.attackingCreatures = []
+      this.defendingCreatures = []
     },
     async endTurn() {
       try {
         const response = await endTurnAPI(this.gameId)
         this.updateGameState(response.data)
+        this.clearAttackingCreatures()
         console.log('PASSED TURN')
       } catch (error) {
         console.error('Error ending turn:', error)
@@ -65,26 +68,26 @@ export const useGameStore = defineStore('game', {
       }
     },
     async attack(attackingPlayerId, attackingCreatureIds, opponentId) {
-        try {
-          const response = await attackAPI(this.gameId, attackingPlayerId, attackingCreatureIds)
-          this.updateGameState(response.data)
-          const attackingPlayer = this.players.find((player) => player.id === attackingPlayerId)
-          if (attackingPlayer) {
-            this.attackingCreatures = attackingPlayer.battlefield.filter((creature) => creature.isAttacking)
-          }
-          const defendingPlayer = this.players.find((player) => player.id === opponentId)
-          if (defendingPlayer) {
-            this.defendingCreatures = defendingPlayer.battlefield.filter((creature) => !creature.isAttacking)
-          }
-          this.promptForBlockers()
-        } catch (error) {
-          console.error('Error attacking', error)
+      try {
+        const response = await attackAPI(this.gameId, attackingPlayerId, attackingCreatureIds)
+        this.updateGameState(response.data)
+        const attackingPlayer = this.players.find((player) => player.id === attackingPlayerId)
+        if (attackingPlayer) {
+          this.attackingCreatures = attackingPlayer.battlefield.filter((creature) => creature.isAttacking)
         }
-      },
+        const defendingPlayer = this.players.find((player) => player.id === opponentId)
+        if (defendingPlayer) {
+          this.defendingCreatures = defendingPlayer.battlefield.filter((creature) => !creature.isAttacking)
+        }
+        this.promptForBlockers()
+      } catch (error) {
+        console.error('Error attacking', error)
+      }
+    },
     
-      promptForBlockers() {
-        this.showBlockerModal = true
-      },
+    promptForBlockers() {
+      this.showBlockerModal = true
+    },
     async assignBlockers(defendingPlayerId, blockerAssignments) {
       try {
         const response = await assignBlockersAPI(this.gameId, defendingPlayerId, blockerAssignments)
@@ -101,6 +104,14 @@ export const useGameStore = defineStore('game', {
       }
     },
     
+    toggleAttack(cardId) {
+      const creatureIndex = this.attackingCreatureIds.indexOf(cardId)
+      if (creatureIndex === -1) {
+        this.attackingCreatureIds.push(cardId)
+      } else {
+        this.attackingCreatureIds.splice(creatureIndex, 1)
+      }
+    },
   },
   getters: {
     // Add any getters you might need here
