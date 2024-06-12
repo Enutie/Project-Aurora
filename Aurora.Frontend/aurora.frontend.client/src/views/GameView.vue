@@ -44,7 +44,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
 import PlayerInfo from '@/components/PlayerInfo.vue'
@@ -61,6 +61,14 @@ onMounted(async () => {
   gameStore.gameId = route.params.id
   await gameStore.fetchGameState()
 })
+
+watch(
+  () => gameStore.isGameOver, (isGameOver) => {
+    if(isGameOver) {
+      router.push({name: 'GameOver', params: { winner:gameStore.winner.name}})
+    }
+  }
+)
 
 function handleBlockersAssigned(blockerAssignments) {
   gameStore.showBlockerModal = false

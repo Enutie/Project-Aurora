@@ -1,29 +1,27 @@
 <template>
   <div :class="[ 'card', cardType, { 'tapped': isTapped, 'attacking': isAttackingClass } ]">
-    <span class="card-name">{{ cardName }} {{ formattedManaCost }}</span>
-    <div class="card-buttons" v-if="isCurrentPlayer && isInHand">
-      <button class="play-button" v-if="!isLand" @click="playCreature">Play</button>
-      <button class="play-button" v-if="isLand" @click="playLand">Play</button>
-    </div>
-    <div class="card-buttons" v-else-if="isCreature && isCurrentPlayer">
-      <button
-        class="attack-button"
-        @click="toggleAttack"
-        :class="{ 'attacking': isAttacking }"
-      >
-        {{ isAttacking ? 'Attacking' : 'Attack' }}
-      </button>
-      <button class="block-button" v-if="isBlocked">Block</button>
-    </div>
-    <div class="card-buttons" v-else-if="isLand && isCurrentPlayer">
-      <button class="tap-button" @click="toggleTap">{{ isTapped ? 'Untap' : 'Tap' }}</button>
-    </div>
+    <CardName :card="card" />
+    <CardButtons
+      :isLand="isLand"
+      :isCreature="isCreature"
+      :isCurrentPlayer="isCurrentPlayer"
+      :isTapped="isTapped"
+      :isAttacking="isAttacking"
+      :isBlocked="isBlocked"
+      :isInHand="isInHand"
+      @toggleTap="toggleTap"
+      @toggleAttack="toggleAttack"
+      @playCreature="playCreature"
+      @playLand="playLand"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import CardButtons from './CardButtons.vue'
+import CardName from './CardName.vue'
 
 const props = defineProps({
   card: {
@@ -74,49 +72,6 @@ const isBlocked = computed(() => {
   return props.card.isBlocked
 })
 
-const manaCost = computed(() => {
-  return props.card.manaCost || []
-})
-
-const formattedManaCost = computed(() => {
-  const manaCount = {
-    Green: 0,
-    Blue: 0,
-    Red: 0,
-    White: 0,
-    Black: 0,
-    Colorless: 0
-  };
-
-  manaCost.value.forEach(mana => {
-    manaCount[mana]++;
-  });
-
-  let result = '';
-
-  if (manaCount.Colorless > 0) {
-    result += manaCount.Colorless;
-  }
-  if (manaCount.Green > 0) {
-    result += manaCount.Green > 1 ? manaCount.Green + 'G' : 'G';
-  }
-  if (manaCount.Blue > 0) {
-    result += manaCount.Blue > 1 ? manaCount.Blue + 'U' : 'U';
-  }
-  if (manaCount.Red > 0) {
-    result += manaCount.Red > 1 ? manaCount.Red + 'R' : 'R';
-  }
-  if (manaCount.White > 0) {
-    result += manaCount.White > 1 ? manaCount.White + 'W' : 'W';
-  }
-  if (manaCount.Black > 0) {
-    result += manaCount.Black > 1 ? manaCount.Black + 'B' : 'B';
-  }
-
-  return result;
-})
-
-
 const isAttackingClass = computed(() => {
   return gameStore.attackingCreatureIds.includes(props.card.id)
 })
@@ -156,77 +111,46 @@ function playLand() {
   overflow: hidden;
   transition: transform 0.3s, box-shadow 0.3s;
 }
+
 .card:hover {
   transform: translateY(-5px);
 }
+
 .creature-card {
   background-color: #8bc34a;
 }
+
 .land-card {
   background-color: #795548;
 }
-.attacking {
-  border: 2px solid red;
-  box-shadow: 0 0 8px red;
-}
-.card-name {
-  display: block;
-  font-weight: bold;
-}
+
 .tapped {
   transform: rotate(90deg);
 }
+
 .tapped:hover {
   transform: rotate(90deg) translateY(-5px);
 }
-.card-buttons {
-  display: none;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  padding: 0;
-  text-align: center;
+.card:hover {
+  transform: translateY(-5px);
 }
-.card:hover .card-buttons {
-  display: flex;
-  justify-content: center;
+
+.creature-card {
+  background-color: #8bc34a;
 }
-.tap-button,
-.play-button,
-.attack-button,
-.block-button {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 10px;
-  text-decoration: none;
-  font-size: 14px;
-  cursor: pointer;
-  flex: 1;
-  margin: 0;
-  transition: background-color 0.3s ease;
+
+.land-card {
+  background-color: #795548;
 }
-.tap-button {
-  background-color: #FFC107;
+
+.tapped {
+  transform: rotate(90deg);
 }
-.tap-button:hover {
-  background-color: #FFA000;
+
+.tapped:hover {
+  transform: rotate(90deg) translateY(-5px);
 }
-.attack-button:hover,
-.block-button:hover {
-  background-color: #388e3c; /* Darker shade on hover */
-}
-.block-button {
-  background-color: #2196F3;
-}
-.card:hover .play-button {
-  display: block;
-}
-.play-button:hover {
-  background-color: #388e3c;
-}
+
 .attacking {
   border: 2px solid red;
   box-shadow: 0 0 8px red;
