@@ -4,6 +4,7 @@
       v-for="(card, index) in cards"
       :key="index"
       :card="card"
+      :player-id="playerId"
       :isInHand="true"
     />
   </div>
@@ -15,6 +16,10 @@ import Card from './Card.vue'
 defineProps({
   cards: {
     type: Array,
+    required: true
+  },
+  playerId: {
+    type: String,
     required: true
   }
 })

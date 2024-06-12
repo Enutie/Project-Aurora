@@ -4,12 +4,14 @@
       v-for="(card, index) in cards"
       :key="index"
       :card="card"
+      :player-id="playerId"
       @toggle-attack="toggleAttack"
     />
   </div>
   <button
     class="attack-button"
     @click="handleAttack"
+    v-if="playerId === gameStore.currentPlayer.id"
     :disabled="gameStore.attackingCreatureIds.length === 0"
   >
     Attack

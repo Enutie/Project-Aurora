@@ -1,11 +1,11 @@
 <template>
-  <div :class="[ 'card', cardType, { 'tapped': isTapped, 'attacking': isAttacking } ]">
-    <span class="card-name">{{ cardName }}, {{ manaCost }}</span>
-    <div class="card-buttons" v-if="isInHand">
-      <button class="play-button" v-if="!isLand" @click="gameStore.castCreature(card.id)">Play</button>
-      <button class="play-button" v-if="isLand" @click="gameStore.playLand(card.id)">Play</button>
+  <div :class="[ 'card', cardType, { 'tapped': isTapped, 'attacking': isAttackingClass } ]">
+    <span class="card-name">{{ cardName }}, {{ formattedManaCost }}</span>
+    <div class="card-buttons" v-if="isCurrentPlayer && isInHand">
+      <button class="play-button" v-if="!isLand" @click="playCreature">Play</button>
+      <button class="play-button" v-if="isLand" @click="playLand">Play</button>
     </div>
-    <div class="card-buttons" v-else-if="isCreature">
+    <div class="card-buttons" v-else-if="isCreature && isCurrentPlayer">
       <button
         class="attack-button"
         @click="toggleAttack"
@@ -15,7 +15,7 @@
       </button>
       <button class="block-button" v-if="isBlocked">Block</button>
     </div>
-    <div class="card-buttons" v-else-if="isLand">
+    <div class="card-buttons" v-else-if="isLand && isCurrentPlayer">
       <button class="tap-button" @click="toggleTap">{{ isTapped ? 'Untap' : 'Tap' }}</button>
     </div>
   </div>
@@ -33,10 +33,18 @@ const props = defineProps({
   isInHand: {
     type: Boolean,
     default: false
+  },
+  playerId: {
+    type: String,
+    required: true
   }
 })
 
 const gameStore = useGameStore()
+
+const isCurrentPlayer = computed(() => {
+  return props.playerId === gameStore.currentPlayer.id
+})
 
 const isCreature = computed(() => {
   return props.card.type === 'Creature'
@@ -67,7 +75,50 @@ const isBlocked = computed(() => {
 })
 
 const manaCost = computed(() => {
-  return props.card.manaCost
+  return props.card.manaCost || []
+})
+
+const formattedManaCost = computed(() => {
+  const manaCount = {
+    Green: 0,
+    Blue: 0,
+    Red: 0,
+    White: 0,
+    Black: 0,
+    Colorless: 0
+  };
+
+  manaCost.value.forEach(mana => {
+    manaCount[mana]++;
+  });
+
+  let result = '';
+
+  if (manaCount.Colorless > 0) {
+    result += manaCount.Colorless;
+  }
+  if (manaCount.Green > 0) {
+    result += manaCount.Green > 1 ? manaCount.Green + 'G' : 'G';
+  }
+  if (manaCount.Blue > 0) {
+    result += manaCount.Blue > 1 ? manaCount.Blue + 'U' : 'U';
+  }
+  if (manaCount.Red > 0) {
+    result += manaCount.Red > 1 ? manaCount.Red + 'R' : 'R';
+  }
+  if (manaCount.White > 0) {
+    result += manaCount.White > 1 ? manaCount.White + 'W' : 'W';
+  }
+  if (manaCount.Black > 0) {
+    result += manaCount.Black > 1 ? manaCount.Black + 'B' : 'B';
+  }
+
+  return result;
+})
+
+
+const isAttackingClass = computed(() => {
+  return gameStore.attackingCreatureIds.includes(props.card.id)
 })
 
 function toggleTap() {
@@ -76,6 +127,14 @@ function toggleTap() {
 
 function toggleAttack() {
   gameStore.toggleAttack(props.card.id)
+}
+
+function playCreature() {
+  gameStore.castCreature(props.card.id)
+}
+
+function playLand() {
+  gameStore.playLand(props.card.id)
 }
 </script>
 
@@ -95,7 +154,7 @@ function toggleAttack() {
   padding: 5px;
   position: relative;
   overflow: hidden;
-  transition: transform 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 .card:hover {
   transform: translateY(-5px);
@@ -108,6 +167,7 @@ function toggleAttack() {
 }
 .attacking {
   border: 2px solid red;
+  box-shadow: 0 0 8px red;
 }
 .card-name {
   display: block;
