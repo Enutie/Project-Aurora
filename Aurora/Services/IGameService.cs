@@ -17,6 +17,7 @@ namespace Aurora.Services
         GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments);
         GameDTO SwitchTurn(string gameId);
         GameDTO GetGameState(string gameId);
+        GameDTO AdvanceToNextPhase(string gameId);
         PlayerDTO GetPlayerInfo(string gameId, string playerId);
         LandDTO GetLandById(string landId);
         CreatureDTO GetCreatureById(string creatureId);

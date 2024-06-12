@@ -22,7 +22,30 @@ namespace Aurora.Services
             this._cardConverter = cardConverter;
         }
 
-		public GameDTO CreateGame(string playerName)
+        public GameDTO AdvanceToNextPhase(string gameId)
+        {
+            try
+			{
+                if (!_games.TryGetGame(gameId, out var game))
+                {
+                    throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+                }
+				game.AdvanceToNextPhase();
+				return CreateGameDTOFromGame(game);
+            }
+            catch (GameNotFoundException ex)
+            {
+                _logger.LogError(ex, "Game not found");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while advancing to the next phase.");
+                throw new InvalidOperationException("An error occurred while advancing to the next phase.", ex);
+            }
+        }
+
+        public GameDTO CreateGame(string playerName)
 		{
 			var game = new Game(new List<Player>() {
 		new Player(playerName),
@@ -30,59 +53,20 @@ namespace Aurora.Services
 	});
 			_games.AddGame(game);
 
-			return new GameDTO
-			{
-				Id = game.Id,
-				Players = game.Players.Select(p => new PlayerDTO
-				{
-					Id = p.Id,
-					Name = p.Name,
-					Hand = p.Hand.Select(_cardConverter.ConvertToCardDTO).ToList(),
-					Battlefield = p.Battlefield.Select(_cardConverter.ConvertToCardDTO).ToList(),
-					Life = p.Life
-				}).ToList(),
-				CurrentPlayerIndex = game.currentPlayerIndex,
-				IsGameOver = game.IsGameOver,
-				Winner = game.Winner != null ? new PlayerDTO
-				{
-					Id = game.Winner.Id,
-					Name = game.Winner.Name,
-					Life = game.Winner.Life
-				} : null
-			};
+			return CreateGameDTOFromGame(game);
 		}
 
 		public GameDTO GetGameState(string gameId)
 		{
 			try
-			{
-				if (!_games.TryGetGame(gameId, out var game))
-				{
-					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
-				}
-
-				return new GameDTO
-				{
-					Id = game.Id,
-					Players = game.Players.Select(p => new PlayerDTO
-					{
-						Id = p.Id,
-						Name = p.Name,
-						Hand = p.Hand.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
-						Battlefield = p.Battlefield.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
-						Life = p.Life
-					}).ToList(),
-					CurrentPlayerIndex = game.currentPlayerIndex,
-					IsGameOver = game.IsGameOver,
-					Winner = game.Winner != null ? new PlayerDTO
-					{
-						Id = game.Winner.Id,
-						Name = game.Winner.Name,
-						Life = game.Winner.Life
-					} : null
-				};
-			}
-			catch (GameNotFoundException ex)
+            {
+                if (!_games.TryGetGame(gameId, out var game))
+                {
+                    throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+                }
+                return CreateGameDTOFromGame(game);
+            }
+            catch (GameNotFoundException ex)
 			{
 				_logger.LogError(ex, "Game not found");
 				throw;
@@ -94,7 +78,7 @@ namespace Aurora.Services
 			}
 		}
 
-		public GameDTO StartGame(List<PlayerDTO> playerDTOs)
+        public GameDTO StartGame(List<PlayerDTO> playerDTOs)
 		{
 			try
 			{
@@ -108,26 +92,7 @@ namespace Aurora.Services
 				var game = new Game(players);
 				_games.AddGame(game);
 
-				return new GameDTO
-				{
-					Id = game.Id,
-					Players = game.Players.Select(p => new PlayerDTO
-					{
-						Id = p.Id,
-						Name = p.Name,
-						Hand = p.Hand.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
-						Battlefield = p.Battlefield.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
-						Life = p.Life
-					}).ToList(),
-					CurrentPlayerIndex = game.currentPlayerIndex,
-					IsGameOver = game.IsGameOver,
-					Winner = game.Winner != null ? new PlayerDTO
-					{
-						Id = game.Winner.Id,
-						Name = game.Winner.Name,
-						Life = game.Winner.Life
-					} : null
-				};
+				return CreateGameDTOFromGame(game);
 			}
 			catch (Exception ex)
 			{
@@ -159,5 +124,30 @@ namespace Aurora.Services
 				throw new InvalidOperationException("An error occurred while switching turns.", ex);
 			}
 		}
-	}
+
+        private GameDTO CreateGameDTOFromGame(Game game)
+        {
+            return new GameDTO
+            {
+                Id = game.Id,
+                Players = game.Players.Select(p => new PlayerDTO
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Hand = p.Hand.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+                    Battlefield = p.Battlefield.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+                    Life = p.Life
+                }).ToList(),
+                CurrentPlayerIndex = game.currentPlayerIndex,
+                IsGameOver = game.IsGameOver,
+                Winner = game.Winner != null ? new PlayerDTO
+                {
+                    Id = game.Winner.Id,
+                    Name = game.Winner.Name,
+                    Life = game.Winner.Life
+                } : null,
+                CurrentPhase = game.CurrentPhase.ToString(),
+            };
+        }
+    }
 }

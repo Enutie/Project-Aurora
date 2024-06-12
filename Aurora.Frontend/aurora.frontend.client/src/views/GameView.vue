@@ -31,7 +31,7 @@
       <Deck position="bottom" :cardCount="gameStore.players[0]?.deckCount || 0" />
     </div>
     <div class="pass-turn-button">
-      <button @click="gameStore.endTurn">Pass Turn</button>
+      <button @click="gameStore.advancePhase">{{ gameStore.getNextPhase}}</button>
     </div>
     <BlockerModal
       :showModal="gameStore.showBlockerModal"

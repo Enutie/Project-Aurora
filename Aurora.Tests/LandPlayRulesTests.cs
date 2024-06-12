@@ -22,6 +22,7 @@ namespace Aurora.Tests
             currentPlayer.Hand.Add(land2);
 
             // Act
+            game.StartMainPhase1();
             game.PlayLand(currentPlayer, land);
             var canPlayAnotherLand = game.CanPlayLand(currentPlayer);
 

@@ -3,10 +3,15 @@
     <div :class="`player-info ${position}-player-info`">
       <h2>{{ player?.name || 'Unknown Player' }}</h2>
     <p>Life: {{ player?.life || 0 }}</p>
+    <p>Current phase</p> 
+    <p>{{gameStore.currentPhase}}</p>
     </div>
   </template>
   
   <script setup>
+  import { useGameStore } from '@/stores/gameStore'
+  
+const gameStore = useGameStore()
   defineProps ({
       player: {
         type: Object,

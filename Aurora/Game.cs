@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Aurora.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,7 @@ namespace Aurora
         public bool _hasAttackedThisTurn = false;
         public bool IsGameOver { get; private set; }
         public Player Winner { get; private set; }
+        public Phase CurrentPhase { get; private set; }
 
         private Player _attackingPlayer;
         private Player _defendingPlayer;
@@ -25,13 +27,63 @@ namespace Aurora
         {
             Players = players;
 
-            foreach( Player player in Players)
+            foreach (Player player in Players)
             {
                 player.Deck.Shuffle();
                 DrawStartingHand(player);
             }
+        }
 
+        public void StartBeginningPhase()
+        {
+            CurrentPhase = Phase.Beginning;
+            _landsPlayedThisTurn[GetCurrentPlayer()] = 0;
+            _hasAttackedThisTurn = false;
+            UntapPermanents(GetCurrentPlayer());
+            DrawCard(GetCurrentPlayer());
+        }
 
+        public void StartMainPhase1()
+        {
+            CurrentPhase = Phase.MainPhase1;
+        }
+
+        public void StartCombatPhase()
+        {
+            CurrentPhase = Phase.Combat;
+        }
+
+        public void StartMainPhase2()
+        {
+            CurrentPhase = Phase.MainPhase2;
+        }
+        public void StartEndPhase()
+        {
+            CurrentPhase = Phase.Ending;
+        }
+
+        public void AdvanceToNextPhase()
+        {
+            switch (CurrentPhase)
+            {
+                case Phase.Beginning:
+                    StartMainPhase1();
+                    break;
+                case Phase.MainPhase1:
+                    StartCombatPhase();
+                    break;
+                case Phase.Combat:
+                    StartMainPhase2();
+                    break;
+                case Phase.MainPhase2:
+                    StartEndPhase();
+                    break;
+                case Phase.Ending:
+                    SwitchTurn();
+                    break;
+                default:
+                    throw new InvalidOperationException("Unknown phase.");
+            }
         }
         public void CheckWinConditions()
         {
@@ -76,9 +128,17 @@ namespace Aurora
         {
             currentPlayerIndex = (currentPlayerIndex + 1) % Players.Count;
             var currentPlayer = GetCurrentPlayer();
-            _landsPlayedThisTurn[GetCurrentPlayer()] = 0;
-            _hasAttackedThisTurn = false;
+            StartBeginningPhase();
 
+            CheckWinConditions();
+            if (currentPlayer == Players[1])
+            {
+                TakeAITurn();
+            }
+        }
+
+        private static void UntapPermanents(Player currentPlayer)
+        {
             foreach (var land in currentPlayer.Battlefield.OfType<Land>())
             {
                 land.IsTapped = false;
@@ -87,13 +147,6 @@ namespace Aurora
             foreach (var creature in currentPlayer.Battlefield.OfType<Creature>())
             {
                 creature.IsTapped = false; // Untap all creatures for the current player
-            }
-
-            DrawCard(GetCurrentPlayer());
-            CheckWinConditions();
-            if (currentPlayer == Players[1])
-            {
-                TakeAITurn();
             }
         }
 
@@ -108,123 +161,168 @@ namespace Aurora
 
         public void PlayLand(Player player, Land land)
         {
-            if (GetCurrentPlayer() == player && CanPlayLand(player))
+            if (CurrentPhase == Phase.MainPhase1 || CurrentPhase == Phase.MainPhase2)
             {
-                player.PlayLand(land);
-                _landsPlayedThisTurn[player]++;
+
+                if (GetCurrentPlayer() == player && CanPlayLand(player))
+                {
+                    player.PlayLand(land);
+                    _landsPlayedThisTurn[player]++;
+                }
+                else
+                {
+                    throw new AlreadyPlayedALandExpection("Player cannot play a land at this time.");
+                }
             }
             else
             {
-                throw new InvalidOperationException("Player cannot play a land at this time.");
+                throw new InvalidPhaseException("Can only play a land in first or second main phase");
             }
         }
 
         public void CastCreature(Player player, Creature creature)
         {
-            var creatureToRemove = player.Hand.FirstOrDefault(c => c.Id == creature.Id);
-            if (creatureToRemove == null)
+            if (CurrentPhase == Phase.MainPhase1 || CurrentPhase == Phase.MainPhase2)
             {
-                throw new InvalidOperationException("The creature is not in the player's hand.");
-            }
-
-            if (player.ManaPool.CanAfford(creature.ManaCost))
-            {
-                player.ManaPool.Spend(creature.ManaCost);
-
-                player.Hand.Remove(creatureToRemove);
-                player.Battlefield.Add(creature);
-            }
-            else
-            {
-                throw new InvalidOperationException("Player does not have enough mana to cast the creature.");
-            }
-        }
-
-		public void TakeAITurn()
-		{
-			Player aiPlayer = Players[1];
-			if (GetCurrentPlayer() == aiPlayer)
-			{
-				// Play a land if possible
-				if (aiPlayer.Hand.OfType<Land>().Any())
-				{
-					Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
-
-					if (landToPlay != null && CanPlayLand(aiPlayer))
-					{
-						PlayLand(aiPlayer, landToPlay);
-					}
-				}
-
-				// Play creatures if possible
-				var availableMana = aiPlayer.ManaPool.AvailableMana();
-				var creaturesInHand = aiPlayer.Hand.OfType<Creature>().ToList();
-
-				foreach (var creature in creaturesInHand)
-				{
-					if (aiPlayer.ManaPool.CanAfford(creature.ManaCost))
-					{
-						CastCreature(aiPlayer, creature);
-						break; // Play only one creature per turn for now
-					}
-				}
-
-				SwitchTurn();
-			}
-			else
-			{
-				throw new InvalidOperationException($"It's not the {aiPlayer.Name}'s Turn");
-			}
-		}
-
-
-		public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
-        {
-            foreach (var creature in attackingCreatures)
-            {
-                if (!creature.IsTapped) // Check if the creature is not already tapped
+                var creatureToRemove = player.Hand.FirstOrDefault(c => c.Id == creature.Id);
+                if (creatureToRemove == null)
                 {
-                    creature.IsAttacking = true;
-                    creature.IsTapped = true; // Tap the creature when it attacks
+                    throw new InvalidMoveException("The creature is not in the player's hand.");
+                }
+
+                if (player.ManaPool.CanAfford(creature.ManaCost))
+                {
+                    player.ManaPool.Spend(creature.ManaCost);
+
+                    player.Hand.Remove(creatureToRemove);
+                    player.Battlefield.Add(creature);
                 }
                 else
                 {
-                    throw new InvalidOperationException("Cannot declare a tapped creature as an attacker.");
+                    throw new InvalidMoveException("Player does not have enough mana to cast the creature.");
                 }
             }
-            _attackingPlayer = attackingPlayer;
-            _attackingCreatures = attackingCreatures;
+            else
+            {
+                throw new InvalidPhaseException("Can only play a creature on first or second main phase");
+            }
+        }
+
+        public void TakeAITurn()
+        {
+            Player aiPlayer = Players[1];
+            if (GetCurrentPlayer() == aiPlayer)
+            {
+                AdvanceToNextPhase();
+                // Play a land if possible
+                if (aiPlayer.Hand.OfType<Land>().Any())
+                {
+                    Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
+
+                    if (landToPlay != null && CanPlayLand(aiPlayer))
+                    {
+                        PlayLand(aiPlayer, landToPlay);
+                    }
+                }
+
+                // Play creatures if possible
+                var availableMana = aiPlayer.ManaPool.AvailableMana();
+                var creaturesInHand = aiPlayer.Hand.OfType<Creature>().ToList();
+
+                foreach (var creature in creaturesInHand)
+                {
+                    if (aiPlayer.ManaPool.CanAfford(creature.ManaCost))
+                    {
+                        CastCreature(aiPlayer, creature);
+                        break; // Play only one creature per turn for now
+                    }
+                }
+                AdvanceToNextPhase();
+                //Do combat
+                AdvanceToNextPhase();
+                //Do secondmain stuff
+                AdvanceToNextPhase();
+
+                SwitchTurn();
+            }
+            else
+            {
+                throw new InvalidOperationException($"It's not the {aiPlayer.Name}'s Turn");
+            }
+        }
+
+
+        public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
+        {
+            if (CurrentPhase == Phase.Combat)
+            {
+
+                foreach (var creature in attackingCreatures)
+                {
+                    if (!creature.IsTapped) // Check if the creature is not already tapped
+                    {
+                        creature.IsAttacking = true;
+                        creature.IsTapped = true; // Tap the creature when it attacks
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Cannot declare a tapped creature as an attacker.");
+                    }
+                }
+                _attackingPlayer = attackingPlayer;
+                _attackingCreatures = attackingCreatures;
+            }
+            else
+            {
+                throw new InvalidPhaseException("Can only declare attackers in the combat phase.");
+            }
         }
 
         public void AssignBlockers(Player defendingPlayer, Dictionary<Creature, Creature> blockingCreatures)
         {
-            _defendingPlayer = defendingPlayer;
-            _blockingCreatures = blockingCreatures;
+            if (CurrentPhase == Phase.Combat)
+            {
 
-            ResolveCombat();
+                _defendingPlayer = defendingPlayer;
+                _blockingCreatures = blockingCreatures;
+
+                ResolveCombat();
+            }
+            else
+            {
+                throw new InvalidPhaseException("Can only assign blockers in the combat phase.");
+            }
         }
 
         private void ResolveCombat()
         {
-            foreach (var attackingCreature in _attackingCreatures)
+            if (CurrentPhase == Phase.Combat)
             {
-                if (_blockingCreatures.TryGetValue(attackingCreature, out var blockingCreature))
+
+                foreach (var attackingCreature in _attackingCreatures)
                 {
-                    attackingCreature.DealDamage(blockingCreature);
-                    blockingCreature.DealDamage(attackingCreature);
+                    if (_blockingCreatures.TryGetValue(attackingCreature, out var blockingCreature))
+                    {
+                        attackingCreature.DealDamage(blockingCreature);
+                        blockingCreature.DealDamage(attackingCreature);
+                    }
+                    else
+                    {
+                        _defendingPlayer.TakeDamage(attackingCreature.Power);
+                    }
+                    attackingCreature.IsAttacking = false;
                 }
-                else
-                {
-                    _defendingPlayer.TakeDamage(attackingCreature.Power);
-                }
-                attackingCreature.IsAttacking = false;
+
+                _attackingCreatures.Clear();
+                _blockingCreatures.Clear();
+                _hasAttackedThisTurn = true;
+
+                CheckWinConditions();
             }
-
-            _attackingCreatures.Clear();
-            _blockingCreatures.Clear();
-            _hasAttackedThisTurn = true;
-
-            CheckWinConditions();
+            else
+            {
+                throw new InvalidPhaseException("Can only resolve combat in the combat phase");
+            }
         }
     }
 }

@@ -33,6 +33,7 @@ namespace Aurora.Tests
             player.Hand.Add(land);
 
             // Act
+            game.StartMainPhase1();
             game.PlayLand(player, land);
 
             // Assert

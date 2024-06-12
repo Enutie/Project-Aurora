@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
-import { useRouter } from 'vue-router'
 import {
   getGameState,
-  endTurn as endTurnAPI,
+  advancePhase as advancePhaseAPI,
   playLand as playLandAPI,
   castCreature as castCreatureAPI,
   attack as attackAPI,
@@ -16,6 +15,7 @@ export const useGameStore = defineStore('game', {
     currentPlayer: {},
     isGameOver: false,
     winner: {},
+    currentPhase: "",
     showBlockerModal: false,
     attackingCreatures: [],
     defendingCreatures: [],
@@ -35,6 +35,7 @@ export const useGameStore = defineStore('game', {
       this.currentPlayer = gameState.players[gameState.currentPlayerIndex]
       this.isGameOver = gameState.isGameOver
       this.winner = gameState.winner
+      this.currentPhase = gameState.currentPhase
       console.log('Gamestate updated:', gameState)
     },
     clearAttackingCreatures() {
@@ -42,14 +43,14 @@ export const useGameStore = defineStore('game', {
       this.attackingCreatures = []
       this.defendingCreatures = []
     },
-    async endTurn() {
+    async advancePhase() {
       try {
-        const response = await endTurnAPI(this.gameId)
+        const response = await advancePhaseAPI(this.gameId)
         this.updateGameState(response.data)
         this.clearAttackingCreatures()
-        console.log('PASSED TURN')
+        console.log('GOING TO NEXT PHASE')
       } catch (error) {
-        console.error('Error ending turn:', error)
+        console.error('Error advancing phase:', error)
       }
     },
     async castCreature(creatureId) {
@@ -115,6 +116,17 @@ export const useGameStore = defineStore('game', {
     },
   },
   getters: {
-    // Add any getters you might need here
+    getNextPhase()
+    {
+      const phases = [
+        'Beginning',
+        'MainPhase1',
+        'Combat',
+        'MainPhase2',
+        'Ending',
+        'Passturn'
+      ]
+      return phases[phases.indexOf(this.currentPhase) + 1]
+    }
   },
 })

@@ -93,11 +93,12 @@ namespace Aurora.Controllers
             return Ok(gameDto);
         }
 
-        [HttpPost("{gameId}/end-turn")]
-        public IActionResult EndTurn(string gameId)
+        [HttpPost("{gameId}/advance-phase")]
+        public IActionResult AdvanceToNextPhase(string gameId)
         {
-            var gameDto = _gameService.SwitchTurn(gameId);
+            var gameDto = _gameService.AdvanceToNextPhase(gameId);
             return Ok(gameDto);
         }
+
     }
 }

@@ -106,6 +106,11 @@ namespace Aurora.Services
 				_logger.LogError(ex, "Invalid move. " + ex.Message);
 				throw new InvalidMoveException("Invalid move. " + ex.Message, ex);
 			}
+			catch(InvalidPhaseException ex)
+			{
+				_logger.LogError(ex, "Can only play creatures in first or second main phase");
+				throw new InvalidPhaseException("Can only play creatures in first or second main phase");
+			}
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "An error occurred while attacking.");
@@ -161,6 +166,11 @@ namespace Aurora.Services
 				_logger.LogError(ex, "Invalid Move" + ex.Message);
 				throw new InvalidMoveException("Invalid move. " + ex.Message, ex);
 			}
+			catch (InvalidPhaseException ex)
+			{
+				_logger.LogError(ex, "Can only play creatures in first or second mainphase");
+				throw new InvalidPhaseException("Can only play creatures in first or second mainphase");
+			}
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "An error occurred while casting a creature.");
@@ -207,7 +217,12 @@ namespace Aurora.Services
 				_logger.LogError(ex, "Invalid move. " + ex.Message);
 				throw new InvalidMoveException("Invalid move. " + ex.Message, ex);
 			}
-			catch (Exception ex)
+            catch (InvalidPhaseException ex)
+            {
+                _logger.LogError(ex, "Invalid move. " + ex.Message);
+                throw new InvalidMoveException("Invalid move. " + ex.Message, ex);
+            }
+            catch (Exception ex)
 			{
 				_logger.LogError(ex, "An error occurred while playing a land.");
 				throw new InvalidOperationException("An error occurred while playing a land.", ex);

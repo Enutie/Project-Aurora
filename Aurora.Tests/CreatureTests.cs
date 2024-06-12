@@ -37,6 +37,7 @@ namespace Aurora.Tests
             player.Hand.Add(creature);
 
             // Act
+            game.StartMainPhase1();
             player.PlayLand(land);
             game.CastCreature(player, creature);
 

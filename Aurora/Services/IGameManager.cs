@@ -12,6 +12,8 @@ namespace Aurora.Services
 		GameDTO CreateGame(string playerName);
 		GameDTO StartGame(List<PlayerDTO> playerDTOs);
 		GameDTO GetGameState(string gameId);
-		GameDTO SwitchTurn(string gameId);
+		GameDTO AdvanceToNextPhase(string gameId);
+
+        GameDTO SwitchTurn(string gameId);
 	}
 }

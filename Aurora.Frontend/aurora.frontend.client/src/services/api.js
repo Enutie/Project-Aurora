@@ -30,6 +30,6 @@ export function createGame(playerName) {
     return axios.post(`${API_BASE_URL}/Games/${gameId}/assign-blockers`, { defendingPlayerId, blockerAssignments });
   }
   
-  export function endTurn(gameId) {
-    return axios.post(`${API_BASE_URL}/Games/${gameId}/end-turn`);
+  export function advancePhase(gameId) {
+    return axios.post(`${API_BASE_URL}/Games/${gameId}/advance-phase`);
   }

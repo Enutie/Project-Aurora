@@ -80,5 +80,10 @@ namespace Aurora.Services
         {
             return _gameQueryService.GetCreatureById(creatureId);
         }
+
+        public GameDTO AdvanceToNextPhase(string gameId)
+        {
+            return _gameManager.AdvanceToNextPhase(gameId);
+        }
     }
 }

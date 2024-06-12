@@ -14,5 +14,6 @@ namespace Aurora.DTO
         public int CurrentPlayerIndex { get; set; }
         public bool IsGameOver { get; set; }
         public PlayerDTO Winner { get; set; }
+        public string CurrentPhase { get; set; }
     }
 }

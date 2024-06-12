@@ -1,5 +1,6 @@
 ﻿using Xunit;
 using FluentAssertions;
+using Aurora.Exceptions;
 
 namespace Aurora.Tests
 {
@@ -29,7 +30,8 @@ namespace Aurora.Tests
             var player = game.GetCurrentPlayer();
             var land = new Land(LandType.Forest);
             player.Hand.Add(land);
-            player.PlayLand(land);
+            game.AdvanceToNextPhase();
+            game.PlayLand(player,land);
             var creature = new Creature("Test Creature", new[] { Mana.Green }, 1, 1);
             player.Hand.Add(creature);
 
@@ -84,7 +86,8 @@ namespace Aurora.Tests
             player.Hand.Add(creature);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => game.CastCreature(player, creature));
+            game.AdvanceToNextPhase();
+            Assert.Throws<InvalidMoveException>(() => game.CastCreature(player, creature));
         }
 
         [Fact]
@@ -99,6 +102,7 @@ namespace Aurora.Tests
             var player = game.GetCurrentPlayer();
             var land = new Land(LandType.Forest);
             player.Hand.Add(land);
+            game.AdvanceToNextPhase();
             player.PlayLand(land);
             var creature = new Creature("Test Creature", new[] { Mana.Green }, 1, 1);
             player.Hand.Add(creature);
@@ -121,10 +125,12 @@ namespace Aurora.Tests
             });
             var land = new Land(LandType.Forest);
             game.Players[0].Hand.Add(land);
+            game.StartMainPhase1();
             game.Players[0].PlayLand(land);
             game.SwitchTurn();
             var land2 = new Land(LandType.Forest);
             game.Players[0].Hand.Add(land2);
+            game.StartMainPhase1();
             game.PlayLand(game.Players[0], land2);
             var creature = new Creature("T", new[] { Mana.Green, Mana.Colorless }, 2, 2);
             game.Players[0].Hand.Add(creature);
@@ -147,7 +153,9 @@ namespace Aurora.Tests
             {
                 var land = new Land(LandType.Forest);
                 player.Hand.Add(land);
-                player.PlayLand(land);
+                game.AdvanceToNextPhase();
+                game.PlayLand(player, land);
+                game.SwitchTurn();
             }
 
             var creature1 = new Creature("Creature 1", new[] { Mana.Green, Mana.Colorless }, 1, 1);
@@ -156,6 +164,7 @@ namespace Aurora.Tests
             player.Hand.Add(creature2);
 
             // Act
+            game.AdvanceToNextPhase();
             game.CastCreature(player, creature1);
             game.CastCreature(player, creature2);
 
@@ -179,13 +188,14 @@ namespace Aurora.Tests
             var player = game.GetCurrentPlayer();
             var land = new Land(LandType.Forest);
             player.Hand.Add(land);
+            game.AdvanceToNextPhase();
             game.PlayLand(player, land);
 
             var creature = new Creature("Expensive Creature", new[] { Mana.Green, Mana.Green, Mana.Colorless }, 3, 3);
             player.Hand.Add(creature);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => game.CastCreature(player, creature));
+            Assert.Throws<InvalidMoveException>(() => game.CastCreature(player, creature));
             player.Battlefield.Should().NotContain(creature);
             player.Hand.Should().Contain(creature);
         }
@@ -202,12 +212,13 @@ namespace Aurora.Tests
             var player = game.GetCurrentPlayer();
             var land = new Land(LandType.Forest);
             player.Hand.Add(land);
+            game.AdvanceToNextPhase();
             game.PlayLand(player, land);
 
             var creature = new Creature("Phantom Creature", new[] { Mana.Green }, 1, 1);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => game.CastCreature(player, creature));
+            Assert.Throws<InvalidMoveException>(() => game.CastCreature(player, creature));
             player.Battlefield.Should().NotContain(creature);
             player.Hand.Should().NotContain(creature);
         }
@@ -227,6 +238,7 @@ namespace Aurora.Tests
             {
                 var land = new Land(LandType.Forest);
                 player.Hand.Add(land);
+                game.AdvanceToNextPhase();
                 game.PlayLand(player, land);
                 game.SwitchTurn();
             }
@@ -235,7 +247,8 @@ namespace Aurora.Tests
             player.Hand.Add(creature);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => game.CastCreature(player, creature));
+            game.AdvanceToNextPhase();
+            Assert.Throws<InvalidMoveException>(() => game.CastCreature(player, creature));
             player.Battlefield.Should().NotContain(creature);
             player.Hand.Should().Contain(creature);
             player.Battlefield.OfType<Land>().Count(l => l.IsTapped).Should().Be(0);
@@ -256,6 +269,7 @@ namespace Aurora.Tests
             {
                 var land = new Land(LandType.Forest);
                 player.Hand.Add(land);
+                game.AdvanceToNextPhase();
                 game.PlayLand(player, land);
                 game.SwitchTurn();
             }
@@ -264,6 +278,7 @@ namespace Aurora.Tests
             player.Hand.Add(creature);
 
             // Act
+            game.AdvanceToNextPhase();
             game.CastCreature(player, creature);
 
             // Assert
@@ -286,6 +301,7 @@ namespace Aurora.Tests
             for (int i = 0; i < 4; i++)
             {
                 var land = new Land(LandType.Forest);
+                game.StartMainPhase1();
                 player.Hand.Add(land);
                 game.PlayLand(player, land);
                 game.SwitchTurn();
@@ -295,6 +311,7 @@ namespace Aurora.Tests
             player.Hand.Add(creature);
 
             // Act
+            game.AdvanceToNextPhase();
             game.CastCreature(player, creature);
 
             // Assert
@@ -318,6 +335,7 @@ namespace Aurora.Tests
             {
                 var land = new Land(LandType.Forest);
                 player.Hand.Add(land);
+                game.AdvanceToNextPhase();
                 game.PlayLand(player, land);
                 game.SwitchTurn();
             }
@@ -327,6 +345,7 @@ namespace Aurora.Tests
             player.Hand.Add(creature);
 
             // Act
+            game.AdvanceToNextPhase();
             game.CastCreature(player, creature);
 
             // Assert
