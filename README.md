@@ -29,6 +29,23 @@ I'd love your input and advice! I'm still learning and would really appreciate a
 
 **Notice**: If you believe that any content in this project infringes on your intellectual property rights, please contact me immediately at enutie@gmail.com so that I can remove or alter the material in question.
 
+## MVP Iterations: Exploring the Magic! 🌟
+
+Let's sketch out some ideas for MVP iterations in Project Aurora. I'm stepping into the unknown, learning as I go! 🃏
+
+### Iteration 1: Diving In
+
+- **Objective:** Let's dip our toes into the world of Magic, one step at a time.
+- **What I'm Dreaming Of:**
+  - I'm thinking of starting with basic lands and vanilla creatures.
+  - Maybe I'll try out some basic combat moves to get a feel for things.
+- **What I Might See:** Expect a simple introduction to Magic: The Gathering. We'll touch on different card types and maybe even dip into the stack mechanic, if I'm feeling adventurous!
+
+### Dreaming Up Future Iterations
+
+As I tiptoe forward, I'm dreaming of exploring different card types like instants, sorceries, and creatures. I might even peek into the mysterious world of the stack mechanic. Join me on this journey of discovery! 🚀
+
+
 ## Got Questions?
 
 Hit me up at enutie@gmail.com. Happy coding, and may the Force be with you! 🌌
