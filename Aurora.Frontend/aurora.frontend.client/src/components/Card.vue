@@ -1,6 +1,6 @@
 <template>
   <div :class="[ 'card', cardType, { 'tapped': isTapped, 'attacking': isAttackingClass } ]">
-    <span class="card-name">{{ cardName }}, {{ formattedManaCost }}</span>
+    <span class="card-name">{{ cardName }} {{ formattedManaCost }}</span>
     <div class="card-buttons" v-if="isCurrentPlayer && isInHand">
       <button class="play-button" v-if="!isLand" @click="playCreature">Play</button>
       <button class="play-button" v-if="isLand" @click="playLand">Play</button>
