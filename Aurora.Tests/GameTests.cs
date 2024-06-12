@@ -41,5 +41,35 @@ namespace Aurora.Tests
             player.Hand.Count.Should().Be(7);
         }
 
+        [Fact]
+        public void Game_ShouldSetUpPlayersWithShuffledDecks()
+        {
+            // Arrange
+
+            // Act
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
+
+            // Assert
+            game.Players.Count.Should().Be(2);
+            foreach (var player in game.Players)
+            {
+                player.Deck.Cards.Count.Should().Be(53);
+                player.Hand.Count.Should().Be(7);
+                player.Battlefield.Should().BeEmpty();
+            }
+        }
+
+        [Fact]
+        public void Game_ShouldStartWithPlayerOnesTurn()
+        {
+            // Arrange
+            var game = new Game(new List<Player>() { new Player("Bob"), new Player("AI") });
+
+            // Act
+            var currentPlayer = game.GetCurrentPlayer();
+
+            // Assert
+            currentPlayer.Should().Be(game.Players[0]);
+        }
     }
 }

@@ -4,7 +4,7 @@ using Aurora.Exceptions;
 
 namespace Aurora.Tests
 {
-    public class ManaSystemTests
+    public class ManaCostTests
     {
         [Fact]
         public void Land_ShouldNotBeTappedWhenPlayed()

@@ -3,7 +3,7 @@ using FluentAssertions;
 
 namespace Aurora.Tests
 {
-    public class LandPlayRulesTests
+    public class LandTests
     {
         
         [Fact]
