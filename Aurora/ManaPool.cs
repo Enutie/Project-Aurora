@@ -108,6 +108,10 @@ namespace Aurora
                 }
             }
         }
+        public IEnumerable<Mana> AvailableMana()
+        {
+            return _mana.Keys;
+        }
 
         public void Clear()
         {

@@ -140,31 +140,45 @@ namespace Aurora
             }
         }
 
-        public void TakeAITurn()
-        {
-            Player aiPlayer = Players[1];
-            if (GetCurrentPlayer() == aiPlayer)
-            {
-                if (aiPlayer.Hand.OfType<Land>().Any())
-                {
-                    Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
+		public void TakeAITurn()
+		{
+			Player aiPlayer = Players[1];
+			if (GetCurrentPlayer() == aiPlayer)
+			{
+				// Play a land if possible
+				if (aiPlayer.Hand.OfType<Land>().Any())
+				{
+					Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
 
-                    if (landToPlay != null && CanPlayLand(aiPlayer))
-                    {
-                        PlayLand(aiPlayer, landToPlay);
-                    }
-                }
+					if (landToPlay != null && CanPlayLand(aiPlayer))
+					{
+						PlayLand(aiPlayer, landToPlay);
+					}
+				}
 
-                SwitchTurn();
-            }
-            else
-            {
-                throw new InvalidOperationException($"Its not the {aiPlayer.Name}'s Turn");
-            }
-        }
+				// Play creatures if possible
+				var availableMana = aiPlayer.ManaPool.AvailableMana();
+				var creaturesInHand = aiPlayer.Hand.OfType<Creature>().ToList();
+
+				foreach (var creature in creaturesInHand)
+				{
+					if (aiPlayer.ManaPool.CanAfford(creature.ManaCost))
+					{
+						CastCreature(aiPlayer, creature);
+						break; // Play only one creature per turn for now
+					}
+				}
+
+				SwitchTurn();
+			}
+			else
+			{
+				throw new InvalidOperationException($"It's not the {aiPlayer.Name}'s Turn");
+			}
+		}
 
 
-        public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
+		public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
         {
             foreach (var creature in attackingCreatures)
             {
