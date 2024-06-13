@@ -271,7 +271,7 @@ namespace Aurora
                 }
                 _attackingPlayer = attackingPlayer;
                 _attackingCreatures = attackingCreatures;
-                if(GetCurrentPlayer() == attackingPlayer)
+                if(GetCurrentPlayer() == Players[0])
                 {
                     AIDefendingAction();
                 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Aurora.Exceptions;
 using FluentAssertions;
 
 namespace Aurora.Tests
@@ -60,6 +61,52 @@ namespace Aurora.Tests
             // Assert
             defendingPlayer.Battlefield.Should().NotContain(blockingCreature);
             defendingPlayer.Graveyard.Should().Contain(blockingCreature);
+        }
+
+
+        [Fact]
+        public void AIDefendingAction_ShouldAssignBlockers()
+        {
+            // Arrange
+            var player1 = new Player("Player 1");
+            var player2 = new Player("Player 2");
+            var game = new Game(new List<Player> { player1, player2 });
+
+            var attackingCreature1 = new Creature("Alice", Enumerable.Empty<Mana>(), 1, 1);
+            var attackingCreature2 = new Creature("Bobby", Enumerable.Empty<Mana>(), 2, 2);
+            player1.Battlefield.Add(attackingCreature1);
+            player1.Battlefield.Add(attackingCreature2);
+
+            var blocker1 = new Creature("Charlie", Enumerable.Empty<Mana>(), 1, 1);
+            var blocker2 = new Creature("Daren", Enumerable.Empty<Mana>(), 2, 1);
+            player2.Battlefield.Add(blocker1);
+            player2.Battlefield.Add(blocker2);
+
+            // Act
+            game.StartCombatPhase();
+            game.DeclareAttackers(player1, new List<Creature> { attackingCreature1, attackingCreature2 });
+
+
+            // Assert
+            game.CurrentPhase.Should().Be(Phase.Combat);
+            player2.Graveyard.Should().Contain(blocker1);
+            player2.Graveyard.Should().Contain(blocker2);
+            player2.Battlefield.Should().NotContain(blocker1);
+            player2.Battlefield.Should().NotContain(blocker2);
+            player2.Life.Should().Be(20);
+        }
+
+        [Fact]
+        public void AIDefendingAction_ShouldThrowInvalidPhaseException_WhenNotInCombatPhase()
+        {
+            // Arrange
+            var player1 = new Player("Player 1");
+            var player2 = new Player("Player 2");
+            var game = new Game(new List<Player> { player1, player2 });
+            game.StartMainPhase1();
+
+            // Act & Assert
+            Assert.Throws<InvalidPhaseException>(() => game.AssignBlockers(player2, Enumerable.Empty<KeyValuePair<Creature, Creature>>().ToDictionary()));
         }
     }
 }
