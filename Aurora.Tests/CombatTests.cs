@@ -108,5 +108,35 @@ namespace Aurora.Tests
             // Act & Assert
             Assert.Throws<InvalidPhaseException>(() => game.AssignBlockers(player2, Enumerable.Empty<KeyValuePair<Creature, Creature>>().ToDictionary()));
         }
+
+        [Fact]
+        public void AIAttackingAction_ShouldDeclareAttackers()
+        {
+            // Arrange
+            var player1 = new Player("Player 1");
+            var player2 = new Player("Player 2");
+            var game = new Game(new List<Player> { player1, player2 });
+            var attackingCreature1 = new Creature("Alice", [], 1, 1);
+            var attackingCreature2 = new Creature("Bobby", [], 2, 2);
+            player2.Battlefield.Add(attackingCreature1);
+            player2.Battlefield.Add(attackingCreature2);
+            // Act
+            game.SwitchTurn();
+            player1.Life.Should().Be(17);
+        }
+
+        [Fact]
+        public void AIAttackingAction_ShouldThrowInvalidPhaseException_WhenNotInCombatPhase()
+        {
+            // Arrange
+            var player1 = new Player("Player 1");
+            var player2 = new Player("Player 2");
+            var game = new Game(new List<Player> { player1, player2 });
+            var attackingCreature = new Creature("Alice", [], 1, 1);
+            player1.Battlefield.Add(attackingCreature);
+            game.StartMainPhase1();
+            // Act & Assert
+            Assert.Throws<InvalidPhaseException>(() => game.DeclareAttackers(player1, [attackingCreature]));
+        }
     }
 }

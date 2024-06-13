@@ -238,7 +238,7 @@ namespace Aurora
                     }
                 }
                 AdvanceToNextPhase();
-                //Do combat
+                AIAttackAction();
                 AdvanceToNextPhase();
                 //Do secondmain stuff
                 AdvanceToNextPhase();
@@ -282,10 +282,24 @@ namespace Aurora
             }
         }
 
+        private void AIAttackAction()
+        {
+            Player aiPlayer = Players[1];
+            List<Creature> attackingCreatures = [];
+            foreach(var card in aiPlayer.Battlefield) 
+            {
+                if(card is Creature creature && !creature.IsTapped)
+                {
+                    attackingCreatures.Add(creature);
+                }
+            }
+            DeclareAttackers(aiPlayer, attackingCreatures);
+        }
+
         private void AIDefendingAction()
         {
             Player aiPlayer = Players[1];
-            Dictionary<Creature, Creature> blockingCreatures = new Dictionary<Creature, Creature>();
+            Dictionary<Creature, Creature> blockingCreatures = [];
 
             foreach (var attackingCreature in _attackingCreatures)
             {
