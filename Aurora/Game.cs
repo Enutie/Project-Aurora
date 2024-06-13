@@ -305,6 +305,17 @@ namespace Aurora
                     {
                         attackingCreature.DealDamage(blockingCreature);
                         blockingCreature.DealDamage(attackingCreature);
+                        if (attackingCreature.Toughness <= 0)
+                        {
+                            _attackingPlayer.Battlefield.Remove(attackingCreature);
+                            _attackingPlayer.Graveyard.Add(attackingCreature);
+                        }
+
+                        if (blockingCreature.Toughness <= 0)
+                        {
+                            _defendingPlayer.Battlefield.Remove(blockingCreature);
+                            _defendingPlayer.Graveyard.Add(blockingCreature);
+                        }
                     }
                     else
                     {

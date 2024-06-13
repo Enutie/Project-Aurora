@@ -108,8 +108,8 @@ namespace Aurora.Services
 			}
 			catch(InvalidPhaseException ex)
 			{
-				_logger.LogError(ex, "Can only play creatures in first or second main phase");
-				throw new InvalidPhaseException("Can only play creatures in first or second main phase");
+				_logger.LogError(ex, "Can only attack in the combat phase");
+				throw new InvalidPhaseException("Can only attack in the combat phase");
 			}
 			catch (Exception ex)
 			{

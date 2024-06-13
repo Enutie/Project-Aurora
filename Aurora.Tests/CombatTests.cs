@@ -24,6 +24,7 @@ namespace Aurora.Tests
             defendingPlayer.Battlefield.Add(blockingCreature);
 
             // Act
+            game.StartCombatPhase();
             game.DeclareAttackers(attackingPlayer, new List<Creature> { attackingCreature });
             game.AssignBlockers(defendingPlayer, new Dictionary<Creature, Creature>
         {
@@ -49,6 +50,7 @@ namespace Aurora.Tests
             defendingPlayer.Battlefield.Add(blockingCreature);
 
             // Act
+            game.StartCombatPhase();
             game.DeclareAttackers(attackingPlayer, new List<Creature> { attackingCreature });
             game.AssignBlockers(defendingPlayer, new Dictionary<Creature, Creature>
     {
