@@ -271,11 +271,36 @@ namespace Aurora
                 }
                 _attackingPlayer = attackingPlayer;
                 _attackingCreatures = attackingCreatures;
+                if(GetCurrentPlayer() == attackingPlayer)
+                {
+                    AIDefendingAction();
+                }
             }
             else
             {
                 throw new InvalidPhaseException("Can only declare attackers in the combat phase.");
             }
+        }
+
+        private void AIDefendingAction()
+        {
+            Player aiPlayer = Players[1];
+            Dictionary<Creature, Creature> blockingCreatures = new Dictionary<Creature, Creature>();
+
+            foreach (var attackingCreature in _attackingCreatures)
+            {
+                var availableBlockers = aiPlayer.Battlefield.OfType<Creature>()
+                    .Where(c => !c.IsTapped && !blockingCreatures.ContainsValue(c))
+                    .ToList();
+
+                if (availableBlockers.Any())
+                {
+                    var blocker = availableBlockers.First();
+                    blockingCreatures[attackingCreature] = blocker;
+                }
+            }
+
+            AssignBlockers(aiPlayer, blockingCreatures);
         }
 
         public void AssignBlockers(Player defendingPlayer, Dictionary<Creature, Creature> blockingCreatures)
