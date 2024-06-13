@@ -34,11 +34,6 @@
       <button @click="gameStore.advancePhase">{{ gameStore.getNextPhase}}</button>
     </div>
     <BlockerModal
-      :showModal="gameStore.showBlockerModal"
-      :attacking-creatures="gameStore.attackingCreatures"
-      :defendingCreatures="gameStore.defendingCreatures"
-      @blockers-assigned="handleBlockersAssigned"
-      @blockers-cancelled="handleBlockersCancelled"
     />
   </div>
 </template>
@@ -70,15 +65,16 @@ watch(
   }
 )
 
-function handleBlockersAssigned(blockerAssignments) {
-  gameStore.showBlockerModal = false
-  const defendingPlayer = gameStore.players.find((player) => player.id !== gameStore.currentPlayer.id)
-  gameStore.assignBlockers(defendingPlayer.id, blockerAssignments)
-}
-
-function handleBlockersCancelled() {
-  gameStore.showBlockerModal = false
-}
+watch(
+      () => gameStore.opponentIsAttacking,
+      (newValue, oldValue) => {
+        if (newValue && !oldValue) {
+          console.log('AI IS ATTACKING')
+          gameStore.promptForBlockers()
+        }
+      }
+    )
+    
 </script>
 
 <style scoped>

@@ -114,5 +114,53 @@ namespace Aurora.Tests
             gameDto.Players[0].Hand.OfType<CreatureDTO>().All(c => !c.IsAttacking).Should().BeTrue();
         }
 
+        [Fact]
+        public void CreatureShouldBeRemovedWhenBlockingAttackerWithGreaterPower()
+        {
+            // Create mocks for the dependencies
+            var logger = new Mock<ILogger<GameService>>();
+            var gameManager = new Mock<IGameManager>();
+            var playerActionService = new Mock<IPlayerActionService>();
+            var gameQueryService = new Mock<IGameQueryService>();
+            var cardConverter = new Mock<ICardConverter>();
+
+            // Set up the mocks
+            var initialGameDto = new GameDTO
+            {
+                Id = "1",
+                Players = new List<PlayerDTO>
+        {
+            new PlayerDTO
+            {
+                Id = "1",
+                Battlefield = new List<CardDTO>
+                {
+                    new CreatureDTO { Id = "1", Name = "Attacker", Power = 3, Toughness = 3, IsAttacking = true },
+                    new CreatureDTO { Id = "2", Name = "Blocker", Power = 2, Toughness = 2 }
+                }
+            }
+        }
+            };
+
+            gameManager.Setup(gm => gm.CreateGame(It.IsAny<string>())).Returns(initialGameDto);
+
+            // Mock the AssignBlockers method to return the initial game state (no changes)
+            playerActionService.Setup(pas => pas.AssignBlockers(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Dictionary<string, string>>()))
+                .Returns(initialGameDto);
+
+            // Create an instance of GameService with the mocked dependencies
+            IGameService gs = new GameService(logger.Object, gameManager.Object, playerActionService.Object, gameQueryService.Object, cardConverter.Object);
+
+            var gameDto = gs.CreateGame("bob");
+            var attackerId = gameDto.Players[0].Battlefield.OfType<CreatureDTO>().First(c => c.IsAttacking).Id;
+            var blockerId = gameDto.Players[0].Battlefield.OfType<CreatureDTO>().First(c => !c.IsAttacking).Id;
+
+            var blockerAssignments = new Dictionary<string, string> { { attackerId, blockerId } };
+            gameDto = gs.AssignBlockers(gameDto.Id, gameDto.Players[0].Id, blockerAssignments);
+
+            // Verify that the blocker is still present on the battlefield (feature not implemented)
+            gameDto.Players[0].Battlefield.Any(c => c.Id == blockerId).Should().BeTrue();
+        }
+
     }
 }

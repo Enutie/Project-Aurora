@@ -10,6 +10,7 @@ namespace Aurora
     {
         public List<Card> Hand { get; } = new List<Card>();
         public List<Card> Battlefield { get; } = new List<Card>();
+        public List<Card> Graveyard { get; set; } = new List<Card>();
         public Deck Deck { get; set; }
         public string Name { get; set; }
         public string Id { get; set; } = Guid.NewGuid().ToString();

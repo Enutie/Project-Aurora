@@ -88,7 +88,18 @@ export const useGameStore = defineStore('game', {
     },
     
     promptForBlockers() {
-      this.showBlockerModal = true
+      const opponentId = this.players.find((player) => player.id !== this.currentPlayer.id)?.id;
+    if (opponentId) {
+      const opponentPlayer = this.players.find((player) => player.id === opponentId);
+      const opponentAttackingCreatures = opponentPlayer.battlefield.filter((creature) => creature.isAttacking);
+
+      if (opponentAttackingCreatures.length > 0) {
+        this.attackingCreatures = opponentAttackingCreatures;
+        this.defendingCreatures = this.currentPlayer.battlefield.filter((creature) => !creature.isAttacking);
+        this.showBlockerModal = true;
+      }
+    }
+
     },
     async assignBlockers(defendingPlayerId, blockerAssignments) {
       try {
@@ -116,6 +127,15 @@ export const useGameStore = defineStore('game', {
     },
   },
   getters: {
+    
+    opponentIsAttacking() {
+      const opponentId = this.players.find((player) => player.id !== this.currentPlayer.id)?.id
+      if (opponentId) {
+        const opponentPlayer = this.players.find((player) => player.id === opponentId)
+        return opponentPlayer.battlefield.some((creature) => creature.isAttacking)
+      }
+      return false
+    },
     getNextPhase()
     {
       const phases = [
