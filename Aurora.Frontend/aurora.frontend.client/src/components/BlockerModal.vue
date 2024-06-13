@@ -1,56 +1,52 @@
 <template>
-    <div v-if="showModal" class="modal">
-      <div class="modal-content">
-        <h3>Assign Blockers</h3>
-        <div v-for="(creature, index) in availableBlockers" :key="index" class="blocker-option">
-          <label>
-            <input type="checkbox" v-model="selectedBlockers" :value="creature.id" />
-            {{ creature.name }}
-          </label>
-        </div>
-        <button @click="confirmBlockers" class="confirm-button">Confirm</button>
-        <button @click="cancelBlockers" class="cancel-button">Cancel</button>
+  <div v-if="gameStore.showBlockerModal" class="modal">
+    <div class="modal-content">
+      <h3>Assign Blockers</h3>
+      <div v-for="(creature, index) in availableBlockers" :key="index" class="blocker-option">
+        <label>
+          <input type="checkbox" v-model="selectedBlockers" :value="creature.id" />
+          {{ creature.name }}
+        </label>
       </div>
+      <button @click="confirmBlockers" class="confirm-button">Confirm</button>
+      <button @click="cancelBlockers" class="cancel-button">Cancel</button>
     </div>
-  </template>
-  
-  <script setup>
-  import { ref, computed } from 'vue';
+  </div>
+</template>
 
-const props = defineProps({
-  showModal: Boolean,
-  attackingCreatures: Array,
-  defendingCreatures: Array,
-});
+<script setup>
+import { ref, computed } from 'vue';
+import { useGameStore } from '../stores/gameStore'
 
-const emit = defineEmits(['blockers-assigned', 'blockers-cancelled']);
+const gameStore = useGameStore();
 
 const selectedBlockers = ref([]);
 
 const availableBlockers = computed(() => {
-  return props.defendingCreatures.filter(creature => !creature.isTapped);
+  return gameStore.defendingCreatures.filter(creature => !creature.isTapped);
 });
 
 function confirmBlockers() {
   const blockerAssignments = getSelectedBlockers();
-  emit('blockers-assigned', blockerAssignments);
+  gameStore.assignBlockers(gameStore.currentPlayer.id, blockerAssignments);
+  gameStore.showBlockerModal = false;
 }
 
 function cancelBlockers() {
-  emit('blockers-cancelled');
+  gameStore.showBlockerModal = false;
 }
 
 function getSelectedBlockers() {
   const assignments = {};
-  props.attackingCreatures.forEach(attacker => {
-    const blocker = props.defendingCreatures.find(creature => selectedBlockers.value.includes(creature.id));
+  gameStore.attackingCreatures.forEach(attacker => {
+    const blocker = gameStore.defendingCreatures.find(creature => selectedBlockers.value.includes(creature.id));
     if (blocker) {
       assignments[attacker.id] = blocker.id;
     }
   });
   return assignments;
 }
-  </script>
+</script>
   
   <style scoped>
   .modal {

@@ -140,45 +140,70 @@ namespace Aurora
             }
         }
 
-		public void TakeAITurn()
-		{
-			Player aiPlayer = Players[1];
-			if (GetCurrentPlayer() == aiPlayer)
-			{
-				// Play a land if possible
-				if (aiPlayer.Hand.OfType<Land>().Any())
-				{
-					Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
+        public void TakeAITurn()
+        {
+            Player aiPlayer = Players[1];
+            if (GetCurrentPlayer() == aiPlayer)
+            {
+                // Play a land if possible
+                if (aiPlayer.Hand.OfType<Land>().Any())
+                {
+                    Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
 
-					if (landToPlay != null && CanPlayLand(aiPlayer))
-					{
-						PlayLand(aiPlayer, landToPlay);
-					}
-				}
+                    if (landToPlay != null && CanPlayLand(aiPlayer))
+                    {
+                        PlayLand(aiPlayer, landToPlay);
+                    }
+                }
 
-				// Play creatures if possible
-				var availableMana = aiPlayer.ManaPool.AvailableMana();
-				var creaturesInHand = aiPlayer.Hand.OfType<Creature>().ToList();
+                // Play creatures if possible
+                var availableMana = aiPlayer.ManaPool.AvailableMana();
+                var creaturesInHand = aiPlayer.Hand.OfType<Creature>().ToList();
 
-				foreach (var creature in creaturesInHand)
-				{
-					if (aiPlayer.ManaPool.CanAfford(creature.ManaCost))
-					{
-						CastCreature(aiPlayer, creature);
-						break; // Play only one creature per turn for now
-					}
-				}
+                foreach (var creature in creaturesInHand)
+                {
+                    if (aiPlayer.ManaPool.CanAfford(creature.ManaCost))
+                    {
+                        CastCreature(aiPlayer, creature);
+                        break; // Play only one creature per turn for now
+                    }
+                }
 
-				SwitchTurn();
-			}
-			else
-			{
-				throw new InvalidOperationException($"It's not the {aiPlayer.Name}'s Turn");
-			}
-		}
+                // Attack with available creatures
+                var attackingCreatures = aiPlayer.Battlefield.OfType<Creature>().Where(c => !c.IsTapped).ToList();
+                if (attackingCreatures.Any() && !_hasAttackedThisTurn)
+                {
+                    DeclareAttackers(aiPlayer, attackingCreatures);
+                }
+
+                // Block attacking creatures if possible
+                Player humanPlayer = Players[0];
+                var humanAttackingCreatures = humanPlayer.Battlefield.OfType<Creature>().Where(c => c.IsAttacking).ToList();
+                if (humanAttackingCreatures.Any())
+                {
+                    var blockingCreatures = new Dictionary<Creature, Creature>();
+                    foreach (var attacker in humanAttackingCreatures)
+                    {
+                        var blocker = aiPlayer.Battlefield.OfType<Creature>().FirstOrDefault(c => !c.IsTapped && !c.IsAttacking);
+                        if (blocker != null)
+                        {
+                            blockingCreatures[attacker] = blocker;
+                            blocker.IsTapped = true;
+                        }
+                    }
+                    AssignBlockers(aiPlayer, blockingCreatures);
+                }
+
+                SwitchTurn();
+            }
+            else
+            {
+                throw new InvalidOperationException($"It's not the {aiPlayer.Name}'s Turn");
+            }
+        }
 
 
-		public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
+        public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
         {
             foreach (var creature in attackingCreatures)
             {
@@ -212,6 +237,17 @@ namespace Aurora
                 {
                     attackingCreature.DealDamage(blockingCreature);
                     blockingCreature.DealDamage(attackingCreature);
+                    if (attackingCreature.Toughness <= 0)
+                    {
+                        _attackingPlayer.Battlefield.Remove(attackingCreature);
+                        _attackingPlayer.Graveyard.Add(attackingCreature);
+                    }
+
+                    if (blockingCreature.Toughness <= 0)
+                    {
+                        _defendingPlayer.Battlefield.Remove(blockingCreature);
+                        _defendingPlayer.Graveyard.Add(blockingCreature);
+                    }
                 }
                 else
                 {
