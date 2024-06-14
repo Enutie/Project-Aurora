@@ -120,8 +120,12 @@ namespace Aurora.Tests
             var attackingCreature2 = new Creature("Bobby", [], 2, 2);
             player2.Battlefield.Add(attackingCreature1);
             player2.Battlefield.Add(attackingCreature2);
+            player2.Hand.Clear();
             // Act
-            game.SwitchTurn();
+            if (game.SwitchTurn())
+            {
+                game.AssignBlockers(player1, []);
+            }
             player1.Life.Should().Be(17);
         }
 

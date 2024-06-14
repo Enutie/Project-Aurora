@@ -79,7 +79,11 @@ namespace Aurora
                     StartEndPhase();
                     break;
                 case Phase.Ending:
-                    SwitchTurn();
+                    if (SwitchTurn())
+                    {
+                        AssignBlockers(Players[0], []);
+                        SwitchTurn();
+                    }
                     break;
                 default:
                     throw new InvalidOperationException("Unknown phase.");
@@ -124,7 +128,7 @@ namespace Aurora
             }
         }
 
-        public void SwitchTurn()
+        public bool SwitchTurn()
         {
             currentPlayerIndex = (currentPlayerIndex + 1) % Players.Count;
             var currentPlayer = GetCurrentPlayer();
@@ -133,8 +137,9 @@ namespace Aurora
             CheckWinConditions();
             if (currentPlayer == Players[1])
             {
-                TakeAITurn();
+                return TakeAITurn();
             }
+            return false;
         }
 
         private static void UntapPermanents(Player currentPlayer)
@@ -208,7 +213,7 @@ namespace Aurora
             }
         }
 
-        public void TakeAITurn()
+        public bool TakeAITurn()
         {
             Player aiPlayer = Players[1];
             if (GetCurrentPlayer() == aiPlayer)
@@ -238,12 +243,20 @@ namespace Aurora
                     }
                 }
                 AdvanceToNextPhase();
-                AIAttackAction();
-                AdvanceToNextPhase();
-                //Do secondmain stuff
-                AdvanceToNextPhase();
+                if (AIAttackAction())
+                {
+                    return true;
 
-                SwitchTurn();
+                }
+                else
+                {
+                    AdvanceToNextPhase();
+                    //Do secondmain stuff
+                    AdvanceToNextPhase();
+
+                    SwitchTurn();
+                    return false;
+                }
             }
             else
             {
@@ -271,7 +284,7 @@ namespace Aurora
                 }
                 _attackingPlayer = attackingPlayer;
                 _attackingCreatures = attackingCreatures;
-                if(GetCurrentPlayer() == Players[0])
+                if (GetCurrentPlayer() == Players[0])
                 {
                     AIDefendingAction();
                 }
@@ -282,18 +295,24 @@ namespace Aurora
             }
         }
 
-        private void AIAttackAction()
+        private bool AIAttackAction()
         {
             Player aiPlayer = Players[1];
             List<Creature> attackingCreatures = [];
-            foreach(var card in aiPlayer.Battlefield) 
+            foreach (var card in aiPlayer.Battlefield)
             {
-                if(card is Creature creature && !creature.IsTapped)
+                if (card is Creature creature && !creature.IsTapped)
                 {
                     attackingCreatures.Add(creature);
                 }
             }
             DeclareAttackers(aiPlayer, attackingCreatures);
+            if (Players[0].Battlefield.Select(c => c.IsTapped == false).Count() > 0)
+            {
+                return true;
+            }
+            AssignBlockers(Players[0], []);
+            return false;
         }
 
         private void AIDefendingAction()

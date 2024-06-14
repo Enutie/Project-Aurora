@@ -123,11 +123,19 @@ namespace Aurora.Tests
                 new Player("Bob"),
                 new Player("AI")
             });
+            // Turn one
             var land = new Land(LandType.Forest);
             game.Players[0].Hand.Add(land);
             game.StartMainPhase1();
             game.Players[0].PlayLand(land);
-            game.SwitchTurn();
+            if (game.SwitchTurn())
+            {
+                game.AssignBlockers(game.Players[0], []);
+                game.SwitchTurn();
+            }
+
+
+            // Turn two
             var land2 = new Land(LandType.Forest);
             game.Players[0].Hand.Add(land2);
             game.StartMainPhase1();
@@ -155,7 +163,11 @@ namespace Aurora.Tests
                 player.Hand.Add(land);
                 game.AdvanceToNextPhase();
                 game.PlayLand(player, land);
-                game.SwitchTurn();
+                if (game.SwitchTurn())
+                {
+                    game.AssignBlockers(game.Players[0], []);
+                    game.SwitchTurn();
+                }
             }
 
             var creature1 = new Creature("Creature 1", new[] { Mana.Green, Mana.Colorless }, 1, 1);
@@ -240,7 +252,11 @@ namespace Aurora.Tests
                 player.Hand.Add(land);
                 game.AdvanceToNextPhase();
                 game.PlayLand(player, land);
-                game.SwitchTurn();
+                if (game.SwitchTurn())
+                {
+                    game.AssignBlockers(game.Players[0], []);
+                    game.SwitchTurn();
+                }
             }
 
             var creature = new Creature("Mixed Mana Creature", new[] { Mana.Green, Mana.Red }, 2, 2);
@@ -271,7 +287,11 @@ namespace Aurora.Tests
                 player.Hand.Add(land);
                 game.AdvanceToNextPhase();
                 game.PlayLand(player, land);
-                game.SwitchTurn();
+                if (game.SwitchTurn())
+                {
+                    game.AssignBlockers(game.Players[0], []);
+                    game.SwitchTurn();
+                }
             }
 
             var creature = new Creature("Specific and Colorless Mana Creature", new[] { Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 3, 3);
@@ -304,7 +324,11 @@ namespace Aurora.Tests
                 game.StartMainPhase1();
                 player.Hand.Add(land);
                 game.PlayLand(player, land);
-                game.SwitchTurn();
+                if (game.SwitchTurn())
+                {
+                    game.AssignBlockers(game.Players[0], []);
+                    game.SwitchTurn();
+                }
             }
 
             var creature = new Creature("Colorless Mana Creature", new[] { Mana.Colorless, Mana.Colorless }, 3, 3);
@@ -337,7 +361,11 @@ namespace Aurora.Tests
                 player.Hand.Add(land);
                 game.AdvanceToNextPhase();
                 game.PlayLand(player, land);
-                game.SwitchTurn();
+                if (game.SwitchTurn())
+                {
+                    game.AssignBlockers(game.Players[0], []);
+                    game.SwitchTurn();
+                }
             }
             game.SwitchTurn();
 
