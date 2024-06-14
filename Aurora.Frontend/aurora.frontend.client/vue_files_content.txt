@@ -1,0 +1,1168 @@
+Filename: App.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\App.vue
+Content:
+<template>
+    <router-view></router-view>
+</template>
+
+--------------------------------------------------
+Filename: Battlefield.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\Battlefield.vue
+Content:
+<template>
+  <div class="battlefield">
+    <Card
+      v-for="(card, index) in cards"
+      :key="index"
+      :card="card"
+      :player-id="playerId"
+      @toggle-attack="toggleAttack"
+    />
+  </div>
+  <button
+    class="attack-button"
+    @click="handleAttack"
+    v-if="playerId === gameStore.currentPlayer.id"
+    :disabled="gameStore.attackingCreatureIds.length === 0"
+  >
+    Attack
+  </button>
+</template>
+
+<script setup>
+import Card from './Card.vue'
+import { useGameStore } from '@/stores/gameStore'
+
+const props = defineProps({
+  cards: {
+    type: Array,
+    required: true
+  },
+  playerId: {
+    type: String,
+    required: true
+  },
+  opponentId: {
+    type: String,
+    required: true
+  }
+})
+
+
+const gameStore = useGameStore()
+
+function toggleAttack(cardId) {
+  gameStore.toggleAttack(cardId)
+}
+
+function handleAttack() {
+  gameStore.attack(props.playerId, gameStore.attackingCreatureIds, props.opponentId)
+}
+</script>
+
+<style scoped>
+.battlefield {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  min-height: 150px;
+  background-color: #2e2e2e;
+  border-radius: 5px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+.attack-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin-top: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.attack-button:hover {
+  background-color: #d32f2f;
+}
+
+.attack-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+</style>
+--------------------------------------------------
+Filename: BlockerModal.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\BlockerModal.vue
+Content:
+<template>
+  <div v-if="gameStore.showBlockerModal" class="modal">
+    <div class="modal-content">
+      <h3>Assign Blockers</h3>
+      <div v-for="(creature, index) in availableBlockers" :key="index" class="blocker-option">
+        <label>
+          <input type="checkbox" v-model="selectedBlockers" :value="creature.id" @change="onBlockerSelected" />
+          {{ creature.name }}
+        </label>
+      </div>
+      <button @click="confirmBlockers" class="confirm-button">Confirm</button>
+      <button @click="cancelBlockers" class="cancel-button">Cancel</button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue';
+import { useGameStore } from '../stores/gameStore'
+
+const gameStore = useGameStore();
+
+const selectedBlockers = ref([]);
+
+const availableBlockers = computed(() => {
+  const result = gameStore.defendingCreatures.filter(creature => !creature.isTapped);
+  console.log('avaiableBlockers: ', result)
+  return result;
+});
+
+function confirmBlockers() {
+  const blockerAssignments = getSelectedBlockers();
+  gameStore.assignBlockers(gameStore.players[0].id, blockerAssignments);
+  gameStore.showBlockerModal = false;
+}
+
+function cancelBlockers() {
+  gameStore.showBlockerModal = false;
+}
+
+function onBlockerSelected() {
+  console.log('Selected blockers:', selectedBlockers.value);
+}
+
+function getSelectedBlockers() {
+  const assignments = {};
+  gameStore.attackingCreatures.forEach(attacker => {
+    const blocker = gameStore.defendingCreatures.find(creature => selectedBlockers.value.includes(creature.id));
+    if (blocker) {
+      assignments[attacker.id] = blocker.id;
+    }
+  });
+  return assignments;
+}
+</script>
+  
+  <style scoped>
+  .modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background-color: #1e1e1e;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  color: #fff;
+}
+
+h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.confirm-button,
+.cancel-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin-right: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-button {
+  background-color: #f44336;
+}
+
+.confirm-button:hover {
+  background-color: #45a049;
+}
+
+.cancel-button:hover {
+  background-color: #d32f2f;
+}
+  </style>
+--------------------------------------------------
+Filename: Card.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\Card.vue
+Content:
+<template>
+  <div :class="[ 'card', cardType, { 'tapped': isTapped, 'attacking': isAttackingClass } ]">
+    <CardName :card="card" />
+    <CardButtons
+      :isLand="isLand"
+      :isCreature="isCreature"
+      :isCurrentPlayer="isCurrentPlayer"
+      :isTapped="isTapped"
+      :isAttacking="isAttacking"
+      :isBlocked="isBlocked"
+      :isInHand="isInHand"
+      @toggleTap="toggleTap"
+      @toggleAttack="toggleAttack"
+      @playCreature="playCreature"
+      @playLand="playLand"
+    />
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { useGameStore } from '@/stores/gameStore'
+import CardButtons from './CardButtons.vue'
+import CardName from './CardName.vue'
+
+const props = defineProps({
+  card: {
+    type: Object,
+    required: true
+  },
+  isInHand: {
+    type: Boolean,
+    default: false
+  },
+  playerId: {
+    type: String,
+    required: true
+  }
+})
+
+const gameStore = useGameStore()
+
+const isCurrentPlayer = computed(() => {
+  return props.playerId === gameStore.currentPlayer.id
+})
+
+const isCreature = computed(() => {
+  return props.card.type === 'Creature'
+})
+
+const isLand = computed(() => {
+  return props.card.type === 'Land'
+})
+
+const cardName = computed(() => {
+  return props.card.name
+})
+
+const cardType = computed(() => {
+  return props.card.type.toLowerCase()
+})
+
+const isTapped = computed(() => {
+  return props.card.isTapped
+})
+
+const isAttacking = computed(() => {
+  return props.card.isAttacking
+})
+
+const isBlocked = computed(() => {
+  return props.card.isBlocked
+})
+
+const isAttackingClass = computed(() => {
+  return gameStore.attackingCreatureIds.includes(props.card.id)
+})
+
+function toggleTap() {
+  // Implement tap/untap logic here if needed
+}
+
+function toggleAttack() {
+  gameStore.toggleAttack(props.card.id)
+}
+
+function playCreature() {
+  gameStore.castCreature(props.card.id)
+}
+
+function playLand() {
+  gameStore.playLand(props.card.id)
+}
+</script>
+
+<style scoped>
+.card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  height: 120px;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #000;
+  font-weight: bold;
+  text-align: center;
+  padding: 5px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.creature-card {
+  background-color: #8bc34a;
+}
+
+.land-card {
+  background-color: #795548;
+}
+
+.tapped {
+  transform: rotate(90deg);
+}
+
+.tapped:hover {
+  transform: rotate(90deg) translateY(-5px);
+}
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.creature-card {
+  background-color: #8bc34a;
+}
+
+.land-card {
+  background-color: #795548;
+}
+
+.tapped {
+  transform: rotate(90deg);
+}
+
+.tapped:hover {
+  transform: rotate(90deg) translateY(-5px);
+}
+
+.attacking {
+  border: 2px solid red;
+  box-shadow: 0 0 8px red;
+}
+</style>
+
+--------------------------------------------------
+Filename: CardButtons.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\CardButtons.vue
+Content:
+<!-- CardButtons.vue -->
+<!-- CardButtons.vue -->
+<template>
+    <div class="card-buttons">
+      <button v-if="isLand && isCurrentPlayer && !isInHand" class="tap-button" @click="$emit('toggleTap')">
+        {{ isTapped ? 'Untap' : 'Tap' }}
+      </button>
+      <button v-if="isCreature && isCurrentPlayer && !isInHand" class="attack-button" @click="$emit('toggleAttack')" :class="{ 'attacking': isAttacking }">
+        {{ isAttacking ? 'Attacking' : 'Attack' }}
+      </button>
+      <button v-if="isCreature && isCurrentPlayer && !isInHand && isBlocked" class="block-button">Block</button>
+      <button v-if="!isLand && isCurrentPlayer && isInHand" class="play-button" @click="$emit('playCreature')">Play</button>
+      <button v-if="isLand && isCurrentPlayer && isInHand" class="play-button" @click="$emit('playLand')">Play</button>
+    </div>
+  </template>
+  
+  <script setup>
+  defineProps({
+    isLand: Boolean,
+    isCreature: Boolean,
+    isCurrentPlayer: Boolean,
+    isTapped: Boolean,
+    isAttacking: Boolean,
+    isBlocked: Boolean,
+    isInHand: Boolean,
+  })
+  </script>
+
+  <style scoped>
+.card-buttons {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 0;
+  text-align: center;
+}
+
+.card:hover .card-buttons {
+  display: flex;
+  justify-content: center;
+}
+
+.tap-button,
+.play-button,
+.attack-button,
+.block-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px;
+  text-decoration: none;
+  font-size: 14px;
+  cursor: pointer;
+  flex: 1;
+  margin: 0;
+  transition: background-color 0.3s ease;
+}
+
+.tap-button {
+  background-color: #FFC107;
+}
+
+.tap-button:hover {
+  background-color: #FFA000;
+}
+
+.attack-button:hover,
+.block-button:hover {
+  background-color: #388e3c;
+}
+
+.block-button {
+  background-color: #2196F3;
+}
+
+.card:hover .play-button {
+  display: block;
+}
+
+.play-button:hover {
+  background-color: #388e3c;
+}
+
+.attacking {
+  border: 2px solid red;
+  box-shadow: 0 0 8px red;
+}</style>
+--------------------------------------------------
+Filename: CardName.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\CardName.vue
+Content:
+<!-- CardName.vue -->
+<template>
+    <span class="card-name">{{ cardName }} {{ formattedManaCost }}</span>
+  </template>
+  
+  <script setup>
+  import { computed } from 'vue'
+  
+  const props = defineProps({
+    card: {
+      type: Object,
+      required: true
+    }
+  })
+  
+  const cardName = computed(() => {
+    return props.card.name
+  })
+  
+  const manaCost = computed(() => {
+  return props.card.manaCost || []
+})
+
+const formattedManaCost = computed(() => {
+  const manaCount = {
+    Green: 0,
+    Blue: 0,
+    Red: 0,
+    White: 0,
+    Black: 0,
+    Colorless: 0
+  };
+  manaCost.value.forEach(mana => {
+    manaCount[mana]++;
+  });
+  let result = '';
+  if (manaCount.Colorless > 0) {
+    result += manaCount.Colorless;
+  }
+  if (manaCount.Green > 0) {
+    result += 'G'.repeat(manaCount.Green);
+  }
+  if (manaCount.Blue > 0) {
+    result += 'U'.repeat(manaCount.Blue);
+  }
+  if (manaCount.Red > 0) {
+    result += 'R'.repeat(manaCount.Red);
+  }
+  if (manaCount.White > 0) {
+    result += 'W'.repeat(manaCount.White);
+  }
+  if (manaCount.Black > 0) {
+    result += 'B'.repeat(manaCount.Black);
+  }
+  return result;
+})
+  </script>
+
+  <style scoped>
+.card-name {
+  display: block;
+  font-weight: bold;
+}</style>
+--------------------------------------------------
+Filename: CreateGame.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\CreateGame.vue
+Content:
+<!-- CreateGame.vue -->
+<template>
+    <div class="create-game-container">
+      <h2>Create Game</h2>
+      <form @submit.prevent="createGame">
+        <div class="form-group">
+          <label for="playerName">Player Name:</label>
+          <input type="text" id="playerName" v-model="playerName" required>
+        </div>
+        <button type="submit">Create Game</button>
+      </form>
+    </div>
+  </template>
+  
+  <script setup>
+  import { ref } from 'vue'
+  import axios from 'axios'
+import router from '@/router';
+  
+  const playerName = ref('')
+  
+  const createGame = async () => {
+  try {
+    const response = await axios.post('/api/Games/create-game', playerName.value, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    const gameId = response.data.id;
+    router.push({ name: 'Game', params: { id: gameId } });
+  } catch (error) {
+    console.error(error);
+  }
+};
+  </script>
+  
+  <style scoped>
+  .create-game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 98svh;
+    background-color: #1e1e1e;
+    color: #fff;
+  }
+  
+  h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  label {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 5px;
+  }
+  
+  input[type="text"] {
+    width: 300px;
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    background-color: #2c2c2c;
+    color: #fff;
+  }
+  
+  button[type="submit"] {
+    padding: 10px 20px;
+    font-size: 18px;
+    background-color: #4CAF50;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  button[type="submit"]:hover {
+    background-color: #45a049;
+  }
+  </style>
+--------------------------------------------------
+Filename: Deck.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\Deck.vue
+Content:
+<!-- Deck.vue -->
+<template>
+  <div :class="`deck ${position}-deck`" @mouseover="showCount" @mouseleave="hideCount">
+    <div class="deck-label">Deck</div>
+    <div class="card-count" v-if="isHovering">
+      <span class="count-label"> {{ cardCount}} </span>
+    </div>
+  </div>
+</template>
+  
+  <script setup>
+import { ref } from 'vue'
+
+defineProps({
+  position: {
+    type: String,
+    required: true,
+    validator: value => ['top', 'bottom'].includes(value)
+  },
+  cardCount: {
+    type: Number,
+    required: true
+  }
+})
+
+const isHovering = ref(false)
+
+function showCount() {
+  isHovering.value = true
+}
+
+function hideCount() {
+  isHovering.value = false
+}
+  </script>
+  
+  <style scoped>
+.deck {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  height: 120px;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #000;
+  font-weight: bold;
+  text-align: center;
+  padding: 5px;
+  transition: transform 0.3s;
+}
+
+.deck:hover {
+  transform: translateY(-5px);
+}
+  
+  .bottom-deck {
+    position: absolute;
+    top: 1.5em;
+    left: 1em;
+  }
+  
+  .top-deck {
+    position: absolute;
+    bottom: 1.5em;
+    left: 1em;
+  }
+
+  .card-count {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.deck:hover .card-count {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.count-label {
+  color: white;
+  font-size: 14px;
+}
+  </style>
+--------------------------------------------------
+Filename: Example.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\Example.vue
+Content:
+<template>
+  <div class="game-container">
+    <div class="playmat top-playmat">
+      <Deck position="top" />
+      <Hand :cards="topHandCards" />
+      <Battlefield :cards="topBattlefieldCards" />
+      <PlayerInfo
+        playerName="Player 2"
+        :lifePoints="20"
+        position="top"
+      />
+    </div>
+    <div class="playmat bottom-playmat">
+      <PlayerInfo
+        playerName="Player 1"
+        :lifePoints="20"
+        position="bottom"
+      />
+      <Battlefield :cards="bottomBattlefieldCards" />
+      <Hand :cards="bottomHandCards" />
+      <Deck position="bottom" />
+    </div>
+    <div class="pass-turn-button">
+      <button @click="passTheTurn">Pass Turn</button>
+    </div>
+  </div>
+</template>
+  
+  <script setup>
+  import { useGameState } from '../useGameState.js'
+  import PlayerInfo from './PlayerInfo.vue'
+  import Battlefield from './Battlefield.vue'
+  import Hand from './Hand.vue'
+  import Deck from './Deck.vue'
+  
+  const { topBattlefieldCards, topHandCards, bottomBattlefieldCards, bottomHandCards, passTheTurn } = useGameState()
+  </script>
+
+  <style scoped>
+.game-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background-color: #1e1e1e;
+    color: #fff;
+    box-sizing: border-box;
+    padding: 20px;
+    height: 98svh;
+  }
+  
+  .playmat-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: space-around;
+  }
+  
+  .playmat {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: space-between;
+    align-items: center;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    padding: 15px;
+    box-sizing: border-box;
+    position: relative;
+  }
+  
+  .top-playmat {
+    margin-bottom: 10px;
+  }
+  
+  .bottom-playmat {
+    margin-top: 10px;
+  }
+  
+  .pass-turn-button {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+  }
+  
+  .pass-turn-button button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.pass-turn-button button:hover {
+  background-color: #45a049;
+}
+
+
+</style>
+  
+--------------------------------------------------
+Filename: Hand.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\Hand.vue
+Content:
+<template>
+  <div class="hand">
+    <Card
+      v-for="(card, index) in cards"
+      :key="index"
+      :card="card"
+      :player-id="playerId"
+      :isInHand="true"
+    />
+  </div>
+</template>
+
+<script setup>
+import Card from './Card.vue'
+
+defineProps({
+  cards: {
+    type: Array,
+    required: true
+  },
+  playerId: {
+    type: String,
+    required: true
+  }
+})
+</script>
+  
+  <style scoped>
+  .hand {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    min-height: 100px;
+    background-color: #2e2e2e;
+    border-radius: 5px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  </style>
+--------------------------------------------------
+Filename: PlayerInfo.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\components\PlayerInfo.vue
+Content:
+<!-- PlayerInfo.vue -->
+<template>
+    <div :class="`player-info ${position}-player-info`">
+      <h2>{{ player?.name || 'Unknown Player' }}</h2>
+    <p>Life: {{ player?.life || 0 }}</p>
+    <p>Current phase</p> 
+    <p>{{gameStore.currentPhase}}</p>
+    </div>
+  </template>
+  
+  <script setup>
+  import { useGameStore } from '@/stores/gameStore'
+  
+const gameStore = useGameStore()
+  defineProps ({
+      player: {
+        type: Object,
+        required: true
+      },
+      position: {
+        type: String,
+        required: true,
+        validator: value => ['top', 'bottom'].includes(value)
+      }
+    })
+  </script>
+  
+  <style scoped>
+  .player-info {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+  }
+  
+  .top-player-info {
+    top: 20px;
+    right: 20px;
+  }
+  
+  .bottom-player-info {
+    bottom: 20px;
+    left: 20px;
+  }
+  </style>
+--------------------------------------------------
+Filename: GameOverView.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\views\GameOverView.vue
+Content:
+<template>
+    <div class="game-over-view">
+      <div class="game-over-message">
+        <h2>Game Over</h2>
+        <p v-if="winner">{{ winner }} wins!</p>
+        <p v-else>It's a draw!</p>
+        <button @click="resetGame">Play Again</button>
+      </div>
+    </div>
+  </template>
+  
+  <script setup>
+  import { useRoute } from 'vue-router'
+  import { useRouter } from 'vue-router';
+  import { ref, onMounted } from 'vue'
+  
+  const router = useRouter();
+  const route = useRoute();
+  const winner = ref('')
+
+  onMounted(async () => {
+  winner.value = route.params.winner
+  
+})
+  
+  function resetGame() {
+    router.push({ name: 'CreateGame' });
+  }
+  </script>
+  
+  <style scoped>
+  .game-over-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #1e1e1e;
+  }
+  
+  .game-over-message {
+    background-color: #2e2e2e;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    color: #fff;
+    text-align: center;
+  }
+  
+  .game-over-message h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 24px;
+  }
+  
+  .game-over-message p {
+    margin-bottom: 20px;
+  }
+  
+  .game-over-message button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .game-over-message button:hover {
+    background-color: #45a049;
+  }
+  </style>
+--------------------------------------------------
+Filename: GameView.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\views\GameView.vue
+Content:
+<template>
+  <div class="game-view">
+    <div class="playmat top-playmat">
+      <Deck position="top" :cardCount="gameStore.players[1]?.deckCount || 0" />
+      <Hand
+        :cards="gameStore.players[1]?.hand || []"
+        :playerId="gameStore.players[1]?.id || ''"
+        @play-land="gameStore.playLand"
+        @cast-creature="gameStore.castCreature"
+      />
+      <Battlefield
+    :cards="gameStore.players[1]?.battlefield || []"
+    :playerId="gameStore.players[1]?.id || ''"
+    :opponentId="gameStore.players[0]?.id || ''"
+  />
+      <PlayerInfo :player="gameStore.players[1] || {}" position="top" />
+    </div>
+    <div class="playmat bottom-playmat">
+      <PlayerInfo :player="gameStore.players[0] || {}" position="bottom" />
+      <Battlefield
+    :cards="gameStore.players[0]?.battlefield || []"
+    :playerId="gameStore.players[0]?.id || ''"
+    :opponentId="gameStore.players[1]?.id || ''"
+  />
+      <Hand
+        :cards="gameStore.players[0]?.hand || []"
+        :playerId="gameStore.players[0]?.id || ''"
+        @play-land="gameStore.playLand"
+        @cast-creature="gameStore.castCreature"
+      />
+      <Deck position="bottom" :cardCount="gameStore.players[0]?.deckCount || 0" />
+    </div>
+    <div class="pass-turn-button">
+      <button @click="gameStore.advancePhase">{{gameStore.getNextPhase}}</button>
+    </div>
+    <BlockerModal v-if="gameStore.opponentIsAttacking" />
+  </div>
+</template>
+
+<script setup>
+import { onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useGameStore } from '@/stores/gameStore'
+import PlayerInfo from '@/components/PlayerInfo.vue'
+import Battlefield from '@/components/Battlefield.vue'
+import Hand from '@/components/Hand.vue'
+import Deck from '@/components/Deck.vue'
+import BlockerModal from '@/components/BlockerModal.vue'
+
+const route = useRoute()
+const router = useRouter()
+const gameStore = useGameStore()
+
+onMounted(async () => {
+  gameStore.gameId = route.params.id
+  await gameStore.fetchGameState()
+})
+
+watch(
+  () => gameStore.isGameOver, (isGameOver) => {
+    if(isGameOver) {
+      router.push({name: 'GameOver', params: { winner:gameStore.winner.name}})
+    }
+  }
+)
+
+// watch(
+//   () => gameStore.currentPlayer,
+//   (newPlayer, oldPlayer) => {
+//     if (newPlayer.name !== 'Player') {
+//       gameStore.fetchGameState()
+//     }
+//   }
+// )
+
+</script>
+
+<style scoped>
+.game-view {
+  display: flex;
+    flex-direction: column;
+    flex: 1;
+    background-color: #1e1e1e;
+    color: #fff;
+    box-sizing: border-box;
+    padding: 20px;
+    height: 98svh;
+}
+
+.playmat {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: space-between;
+    align-items: center;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    padding: 15px;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  .top-playmat {
+    margin-bottom: 10px;
+  }
+  
+  .bottom-playmat {
+    margin-top: 10px;
+  }
+  
+  .pass-turn-button {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+  }
+  
+  .pass-turn-button button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.pass-turn-button button:hover {
+  background-color: #45a049;
+}
+
+</style>
+--------------------------------------------------
+Filename: NotFoundView.vue
+Path: D:/funandgiggels/Project-Aurora/Aurora.Frontend/aurora.frontend.client\src\views\NotFoundView.vue
+Content:
+<template>
+    <h1>Oh no, the 404</h1>
+</template>
+--------------------------------------------------

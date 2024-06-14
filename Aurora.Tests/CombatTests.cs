@@ -142,5 +142,32 @@ namespace Aurora.Tests
             // Act & Assert
             Assert.Throws<InvalidPhaseException>(() => game.DeclareAttackers(player1, [attackingCreature]));
         }
+
+        [Fact]
+        public void AttackingOpponentWhenNoBlockersShouldDamageOpponent()
+        {
+            var player1 = new Player("Player 1");
+            var player2 = new Player("Player 2");
+            var game = new Game(new List<Player> { player1, player2 });
+            var attackingCreature = new Creature("Alice", [], 1, 1);
+            player1.Battlefield.Add(attackingCreature);
+            game.StartCombatPhase();
+
+            game.DeclareAttackers(player1, [attackingCreature]);
+            player2.Life.Should().Be(19);
+        }
+
+        [Fact]
+        public void AIAttackingWithNoBlockersShouldDamagePlayer()
+        {
+            var player1 = new Player("Player 1");
+            var player2 = new Player("Player 2");
+            var game = new Game(new List<Player> { player1, player2 });
+            var attackingCreature = new Creature("Alice", [], 1, 1);
+            player2.Battlefield.Add(attackingCreature);
+            player2.Hand.Clear(); // In case that the ai has a turn one play
+            game.SwitchTurn();
+            player1.Life.Should().Be(19);
+        }
     }
 }

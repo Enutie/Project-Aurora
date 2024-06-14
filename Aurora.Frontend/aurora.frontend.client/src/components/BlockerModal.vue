@@ -4,7 +4,7 @@
       <h3>Assign Blockers</h3>
       <div v-for="(creature, index) in availableBlockers" :key="index" class="blocker-option">
         <label>
-          <input type="checkbox" v-model="selectedBlockers" :value="creature.id" />
+          <input type="checkbox" v-model="selectedBlockers" :value="creature.id" @change="onBlockerSelected" />
           {{ creature.name }}
         </label>
       </div>
@@ -15,7 +15,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useGameStore } from '../stores/gameStore'
 
 const gameStore = useGameStore();
@@ -23,17 +23,42 @@ const gameStore = useGameStore();
 const selectedBlockers = ref([]);
 
 const availableBlockers = computed(() => {
-  return gameStore.defendingCreatures.filter(creature => !creature.isTapped);
+  const result = gameStore.defendingCreatures.filter(creature => !creature.isTapped);
+  console.log('availableBlockers:', result);
+  return result;
 });
+
+// Watch for changes in defendingCreatures to re-compute availableBlockers
+watch(
+  () => gameStore.defendingCreatures,
+  (newDefenders) => {
+    console.log('Defending creatures changed:', newDefenders);
+  }
+);
+
+watch(
+  () => gameStore.showBlockerModal,
+  async (newValue) => {
+    if (newValue) {
+      console.log('Blocker modal is now visible');
+      await gameStore.fetchGameState(); // Ensure fresh game state when modal becomes visible
+      console.log('Game state fetched for blocker modal:', gameStore.defendingCreatures);
+    }
+  }
+);
 
 function confirmBlockers() {
   const blockerAssignments = getSelectedBlockers();
-  gameStore.assignBlockers(gameStore.currentPlayer.id, blockerAssignments);
+  gameStore.assignBlockers(gameStore.players[0].id, blockerAssignments);
   gameStore.showBlockerModal = false;
 }
 
 function cancelBlockers() {
   gameStore.showBlockerModal = false;
+}
+
+function onBlockerSelected() {
+  console.log('Selected blockers:', selectedBlockers.value);
 }
 
 function getSelectedBlockers() {
@@ -48,8 +73,8 @@ function getSelectedBlockers() {
 }
 </script>
   
-  <style scoped>
-  .modal {
+<style scoped>
+.modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -106,4 +131,4 @@ h3 {
 .cancel-button:hover {
   background-color: #d32f2f;
 }
-  </style>
+</style>

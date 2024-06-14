@@ -1,0 +1,1938 @@
+Filename: Card.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Card.cs
+Content:
+﻿namespace Aurora
+{
+    public class Card
+    {
+        public string Name { get; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public bool IsTapped { get; set; } = false;
+
+        public Card(string name)
+        {
+            Name = name;
+        }
+    }
+
+    public enum LandType
+    {
+        Plains,
+        Island,
+        Swamp,
+        Mountain,
+        Forest
+    }
+
+    public class Land : Card
+    {
+        public LandType Type { get; }
+        public Mana ProducedMana => Type switch
+        {
+            LandType.Plains => Mana.White,
+            LandType.Island => Mana.Blue,
+            LandType.Swamp => Mana.Black,
+            LandType.Mountain => Mana.Red,
+            LandType.Forest => Mana.Green,
+            _ => throw new ArgumentOutOfRangeException(nameof(Type))
+        };
+
+        public Land(LandType type) : base(type.ToString())
+        {
+            Type = type;
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: Creature.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Creature.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora
+{
+    public class Creature : Card
+    {
+        public IEnumerable<Mana> ManaCost { get; set; }
+        public int Power { get; set; }
+        public int Toughness { get; set; }
+        public bool IsAttacking { get; set; }
+        public bool IsBlocked { get; set; }
+        public Creature BlockedBy { get; set; }
+
+        public void DealDamage(Creature target)
+        {
+            target.Toughness -= Power;
+        }
+
+        public Creature(string name, IEnumerable<Mana> manaCost, int power, int toughness)
+            : base(name)
+        {
+            ManaCost = manaCost;
+            Power = power;
+            Toughness = toughness;
+        }
+        
+    }
+}
+
+--------------------------------------------------
+Filename: Deck.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Deck.cs
+Content:
+﻿using Aurora;
+
+public class Deck
+{
+    public List<Card> Cards { get; private set; }
+    private readonly Random _random = new Random();
+
+    public Deck(IEnumerable<(LandType Type, int Count)> landCounts)
+    {
+        Cards = new List<Card>();
+        foreach (var landCount in landCounts)
+        {
+            for (int i = 0; i < landCount.Count; i++)
+            {
+                Cards.Add(new Land(landCount.Type));
+            }
+        }
+    }
+
+    public Deck(IEnumerable<Card> cards)
+    {
+        Cards = cards.ToList();
+    }
+
+    public void Shuffle()
+    {
+        Cards = Cards.OrderBy(x => _random.Next()).ToList();
+    }
+}
+--------------------------------------------------
+Filename: DeckFactory.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\DeckFactory.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora
+{
+    public static class DeckFactory
+    {
+        public static Deck CreateDeck(LandType landType)
+        {
+            List<Card> cards = new List<Card>();
+            for(int i = 0; i < 60; i++)
+            {
+                cards.Add(new Land(landType));
+            }
+
+            return new Deck(cards);
+        }
+
+        public static Deck MonoGreenVanilla()
+        {
+            List<Card> cards = new List<Card>();
+            for(int i = 0; i < 24; i++)
+            {
+                cards.Add(new Land(LandType.Forest));
+            }
+            for(int i = 0;i < 4; i++)
+            {
+                cards.Add(new Creature("Woodland Druid", new[] { Mana.Green }, 1, 2));
+                cards.Add(new Creature("Bear Cub", new[] { Mana.Green, Mana.Colorless }, 2, 2));
+                cards.Add(new Creature("Barbary Apes", new[] { Mana.Green, Mana.Colorless }, 2, 2));
+                cards.Add(new Creature("Cylian Elf", new[] { Mana.Green, Mana.Colorless }, 2, 2));
+                cards.Add(new Creature("Alpine Grizzly", new[] {Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless}, 4, 2));
+                cards.Add(new Creature("Centaur Courser", new[] { Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 3, 3));
+                cards.Add(new Creature("Axebane Beast", new[] { Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 3, 4));
+            }
+            for(int i = 0; i < 2; i++)
+            {
+                cards.Add(new Creature("Delighted Killbot", new[] { Mana.Colorless, Mana.Colorless }, 2, 1));
+                cards.Add(new Creature("Broodhunter Wurm", new[] { Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 4, 3));
+                cards.Add(new Creature("Feral Krushok", new[] { Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 5, 4));
+                cards.Add(new Creature("Alpha Tyrranax", new[] { Mana.Green, Mana.Green, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless, Mana.Colorless }, 6, 5));
+            }
+            return new Deck(cards);
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: Game.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Game.cs
+Content:
+﻿using Aurora.Exceptions;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora
+{
+    public class Game
+    {
+        public List<Player> Players { get; } = new List<Player>();
+        public int currentPlayerIndex { get; set; } = 0;
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        private Dictionary<Player, int> _landsPlayedThisTurn = new Dictionary<Player, int>();
+        public bool _hasAttackedThisTurn = false;
+        public bool IsGameOver { get; private set; }
+        public Player Winner { get; private set; }
+        public Phase CurrentPhase { get; private set; }
+
+        private Player _attackingPlayer;
+        private Player _defendingPlayer;
+        private List<Creature> _attackingCreatures;
+        private Dictionary<Creature, Creature> _blockingCreatures;
+
+        public Game(List<Player> players)
+        {
+            Players = players;
+
+            foreach (Player player in Players)
+            {
+                player.Deck.Shuffle();
+                DrawStartingHand(player);
+            }
+        }
+
+        public void StartBeginningPhase()
+        {
+            CurrentPhase = Phase.Beginning;
+            _landsPlayedThisTurn[GetCurrentPlayer()] = 0;
+            _hasAttackedThisTurn = false;
+            UntapPermanents(GetCurrentPlayer());
+            DrawCard(GetCurrentPlayer());
+        }
+
+        public void StartMainPhase1()
+        {
+            CurrentPhase = Phase.MainPhase1;
+        }
+
+        public void StartCombatPhase()
+        {
+            CurrentPhase = Phase.Combat;
+        }
+
+        public void StartMainPhase2()
+        {
+            CurrentPhase = Phase.MainPhase2;
+        }
+        public void StartEndPhase()
+        {
+            CurrentPhase = Phase.Ending;
+        }
+
+        public void AdvanceToNextPhase()
+        {
+            switch (CurrentPhase)
+            {
+                case Phase.Beginning:
+                    StartMainPhase1();
+                    break;
+                case Phase.MainPhase1:
+                    StartCombatPhase();
+                    break;
+                case Phase.Combat:
+                    StartMainPhase2();
+                    break;
+                case Phase.MainPhase2:
+                    StartEndPhase();
+                    break;
+                case Phase.Ending:
+                    if (SwitchTurn())
+                    {
+                        AssignBlockers(Players[0], []);
+                        SwitchTurn();
+                    }
+                    break;
+                default:
+                    throw new InvalidOperationException("Unknown phase.");
+            }
+        }
+        public void CheckWinConditions()
+        {
+            foreach (var player in Players)
+            {
+                if (player.Life <= 0 || player.Deck.Cards.Count == 0)
+                {
+                    IsGameOver = true;
+                    Winner = Players.FirstOrDefault(p => p != player);
+                    break;
+                }
+            }
+        }
+
+        private void DrawStartingHand(Player player)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                player.DrawCard();
+            }
+        }
+
+        public Player GetCurrentPlayer()
+        {
+            return Players[currentPlayerIndex];
+        }
+
+        public void DrawCard(Player player)
+        {
+            try
+            {
+                player.DrawCard();
+            }
+            catch (InvalidOperationException)
+            {
+                IsGameOver = true;
+                Winner = Players.FirstOrDefault(p => p != player);
+            }
+        }
+
+        public bool SwitchTurn()
+        {
+            currentPlayerIndex = (currentPlayerIndex + 1) % Players.Count;
+            var currentPlayer = GetCurrentPlayer();
+            StartBeginningPhase();
+
+            CheckWinConditions();
+            if (currentPlayer == Players[1])
+            {
+                return TakeAITurn();
+            }
+            return false;
+        }
+
+        private static void UntapPermanents(Player currentPlayer)
+        {
+            foreach (var land in currentPlayer.Battlefield.OfType<Land>())
+            {
+                land.IsTapped = false;
+            }
+
+            foreach (var creature in currentPlayer.Battlefield.OfType<Creature>())
+            {
+                creature.IsTapped = false; // Untap all creatures for the current player
+            }
+        }
+
+        public bool CanPlayLand(Player player)
+        {
+            if (!_landsPlayedThisTurn.ContainsKey(player))
+            {
+                _landsPlayedThisTurn[player] = 0;
+            }
+            return _landsPlayedThisTurn[player] == 0;
+        }
+
+        public void PlayLand(Player player, Land land)
+        {
+            if (CurrentPhase == Phase.MainPhase1 || CurrentPhase == Phase.MainPhase2)
+            {
+
+                if (GetCurrentPlayer() == player && CanPlayLand(player))
+                {
+                    player.PlayLand(land);
+                    _landsPlayedThisTurn[player]++;
+                }
+                else
+                {
+                    throw new AlreadyPlayedALandExpection("Player cannot play a land at this time.");
+                }
+            }
+            else
+            {
+                throw new InvalidPhaseException("Can only play a land in first or second main phase");
+            }
+        }
+
+        public void CastCreature(Player player, Creature creature)
+        {
+            if (CurrentPhase == Phase.MainPhase1 || CurrentPhase == Phase.MainPhase2)
+            {
+                var creatureToRemove = player.Hand.FirstOrDefault(c => c.Id == creature.Id);
+                if (creatureToRemove == null)
+                {
+                    throw new InvalidMoveException("The creature is not in the player's hand.");
+                }
+
+                if (player.ManaPool.CanAfford(creature.ManaCost))
+                {
+                    player.ManaPool.Spend(creature.ManaCost);
+
+                    player.Hand.Remove(creatureToRemove);
+                    player.Battlefield.Add(creature);
+                }
+                else
+                {
+                    throw new InvalidMoveException("Player does not have enough mana to cast the creature.");
+                }
+            }
+            else
+            {
+                throw new InvalidPhaseException("Can only play a creature on first or second main phase");
+            }
+        }
+
+        public bool TakeAITurn()
+        {
+            Player aiPlayer = Players[1];
+            if (GetCurrentPlayer() == aiPlayer)
+            {
+                AdvanceToNextPhase();
+                // Play a land if possible
+                if (aiPlayer.Hand.OfType<Land>().Any())
+                {
+                    Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
+
+                    if (landToPlay != null && CanPlayLand(aiPlayer))
+                    {
+                        PlayLand(aiPlayer, landToPlay);
+                    }
+                }
+
+                // Play creatures if possible
+                var availableMana = aiPlayer.ManaPool.AvailableMana();
+                var creaturesInHand = aiPlayer.Hand.OfType<Creature>().ToList();
+
+                foreach (var creature in creaturesInHand)
+                {
+                    if (aiPlayer.ManaPool.CanAfford(creature.ManaCost))
+                    {
+                        CastCreature(aiPlayer, creature);
+                        break; // Play only one creature per turn for now
+                    }
+                }
+                AdvanceToNextPhase();
+                if (AIAttackAction())
+                {
+                    return true;
+
+                }
+                else
+                {
+                    AdvanceToNextPhase();
+                    //Do secondmain stuff
+                    AdvanceToNextPhase();
+
+                    SwitchTurn();
+                    return false;
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException($"It's not the {aiPlayer.Name}'s Turn");
+            }
+        }
+
+
+        public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
+        {
+            if (CurrentPhase == Phase.Combat)
+            {
+
+                foreach (var creature in attackingCreatures)
+                {
+                    if (!creature.IsTapped) // Check if the creature is not already tapped
+                    {
+                        creature.IsAttacking = true;
+                        creature.IsTapped = true; // Tap the creature when it attacks
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Cannot declare a tapped creature as an attacker.");
+                    }
+                }
+                _attackingPlayer = attackingPlayer;
+                _attackingCreatures = attackingCreatures;
+                if (GetCurrentPlayer() == Players[0])
+                {
+                    AIDefendingAction();
+                }
+            }
+            else
+            {
+                throw new InvalidPhaseException("Can only declare attackers in the combat phase.");
+            }
+        }
+
+        private bool AIAttackAction()
+        {
+            Player aiPlayer = Players[1];
+            List<Creature> attackingCreatures = [];
+            foreach (var card in aiPlayer.Battlefield)
+            {
+                if (card is Creature creature && !creature.IsTapped)
+                {
+                    attackingCreatures.Add(creature);
+                }
+            }
+            DeclareAttackers(aiPlayer, attackingCreatures);
+            if (Players[0].Battlefield.Select(c => c.IsTapped == false).Count() > 0)
+            {
+                return true;
+            }
+            AssignBlockers(Players[0], []);
+            return false;
+        }
+
+        private void AIDefendingAction()
+        {
+            Player aiPlayer = Players[1];
+            Dictionary<Creature, Creature> blockingCreatures = [];
+
+            foreach (var attackingCreature in _attackingCreatures)
+            {
+                var availableBlockers = aiPlayer.Battlefield.OfType<Creature>()
+                    .Where(c => !c.IsTapped && !blockingCreatures.ContainsValue(c))
+                    .ToList();
+
+                if (availableBlockers.Any())
+                {
+                    var blocker = availableBlockers.First();
+                    blockingCreatures[attackingCreature] = blocker;
+                }
+            }
+
+            AssignBlockers(aiPlayer, blockingCreatures);
+        }
+
+        public void AssignBlockers(Player defendingPlayer, Dictionary<Creature, Creature> blockingCreatures)
+        {
+            if (CurrentPhase == Phase.Combat)
+            {
+
+                _defendingPlayer = defendingPlayer;
+                _blockingCreatures = blockingCreatures;
+
+                ResolveCombat();
+            }
+            else
+            {
+                throw new InvalidPhaseException("Can only assign blockers in the combat phase.");
+            }
+        }
+
+        private void ResolveCombat()
+        {
+            if (CurrentPhase == Phase.Combat)
+            {
+
+                foreach (var attackingCreature in _attackingCreatures)
+                {
+                    if (_blockingCreatures.TryGetValue(attackingCreature, out var blockingCreature))
+                    {
+                        attackingCreature.DealDamage(blockingCreature);
+                        blockingCreature.DealDamage(attackingCreature);
+                        if (attackingCreature.Toughness <= 0)
+                        {
+                            _attackingPlayer.Battlefield.Remove(attackingCreature);
+                            _attackingPlayer.Graveyard.Add(attackingCreature);
+                        }
+
+                        if (blockingCreature.Toughness <= 0)
+                        {
+                            _defendingPlayer.Battlefield.Remove(blockingCreature);
+                            _defendingPlayer.Graveyard.Add(blockingCreature);
+                        }
+                    }
+                    else
+                    {
+                        _defendingPlayer.TakeDamage(attackingCreature.Power);
+                    }
+                    attackingCreature.IsAttacking = false;
+                }
+
+                _attackingCreatures.Clear();
+                _blockingCreatures.Clear();
+                _hasAttackedThisTurn = true;
+
+                CheckWinConditions();
+            }
+            else
+            {
+                throw new InvalidPhaseException("Can only resolve combat in the combat phase");
+            }
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: ManaPool.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\ManaPool.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora
+{
+    public enum Mana
+    {
+        White, Blue, Black, Red, Green, Colorless
+    }
+
+
+    public class ManaPool
+    {
+        public Dictionary<Mana, int> _mana = new Dictionary<Mana, int>();
+        public List<Land> LandsUsed { get; } = new List<Land>();
+
+
+        public void Add(Mana mana, Land land)
+        {
+            if (_mana.ContainsKey(mana))
+            {
+                _mana[mana]++;
+            }
+            else
+            {
+                _mana[mana] = 1;
+            }
+            LandsUsed.Add(land);
+        }
+
+        public bool CanAfford(IEnumerable<Mana> cost)
+        {
+            var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
+            int colorlessCost = remainingCost.ContainsKey(Mana.Colorless) ? remainingCost[Mana.Colorless] : 0;
+
+            if (remainingCost.ContainsKey(Mana.Colorless))
+            {
+                remainingCost.Remove(Mana.Colorless);
+            }
+
+            var availableMana = LandsUsed.Where(l => !l.IsTapped).GroupBy(l => l.ProducedMana).ToDictionary(g => g.Key, g => g.Count());
+
+            foreach (var (mana, count) in availableMana)
+            {
+                if (remainingCost.ContainsKey(mana))
+                {
+                    int usedMana = Math.Min(count, remainingCost[mana]);
+                    remainingCost[mana] -= usedMana;
+                    colorlessCost -= count - usedMana;
+
+                    if (remainingCost[mana] <= 0)
+                    {
+                        remainingCost.Remove(mana);
+                    }
+                }
+                else
+                {
+                    colorlessCost -= count;
+                }
+            }
+
+            return !remainingCost.Any() && colorlessCost <= 0;
+        }
+
+
+        public void Spend(IEnumerable<Mana> cost)
+        {
+            if (!CanAfford(cost))
+            {
+                throw new InvalidOperationException("Insufficient mana to spend.");
+            }
+
+            var remainingCost = cost.GroupBy(m => m).ToDictionary(g => g.Key, g => g.Count());
+
+            foreach (var mana in cost)
+            {
+                if (mana == Mana.Colorless)
+                    continue;
+
+                var landToTap = LandsUsed.FirstOrDefault(l => l.ProducedMana == mana && !l.IsTapped);
+                if (landToTap != null)
+                {
+                    landToTap.IsTapped = true;
+                    remainingCost[mana]--;
+                    if (remainingCost[mana] == 0)
+                    {
+                        remainingCost.Remove(mana);
+                    }
+                }
+            }
+
+            // Spend colorless mana
+            int colorlessCost = remainingCost.ContainsKey(Mana.Colorless) ? remainingCost[Mana.Colorless] : 0;
+            while (colorlessCost > 0)
+            {
+                var landToTap = LandsUsed.FirstOrDefault(l => !l.IsTapped);
+                if (landToTap != null)
+                {
+                    landToTap.IsTapped = true;
+                    colorlessCost--;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Insufficient mana to spend.");
+                }
+            }
+        }
+        public IEnumerable<Mana> AvailableMana()
+        {
+            return _mana.Keys;
+        }
+
+        public void Clear()
+        {
+            _mana.Clear();
+            LandsUsed.Clear();
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: Phase.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Phase.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora
+{
+    public enum Phase
+    {
+        Beginning,
+        MainPhase1,
+        Combat,
+        MainPhase2,
+        Ending
+    }
+}
+
+--------------------------------------------------
+Filename: Player.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Player.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora
+{
+    public class Player
+    {
+        public List<Card> Hand { get; } = new List<Card>();
+        public List<Card> Battlefield { get; } = new List<Card>();
+        public List<Card> Graveyard { get; set; } = new List<Card>();
+        public Deck Deck { get; set; }
+        public string Name { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public ManaPool ManaPool { get; } = new ManaPool();
+        public int Life { get; set; } = 20;
+        public void TakeDamage(int damage)
+        {
+            Life -= damage;
+        }
+
+        public Player(string name)
+        {
+            Name = name;
+            Deck = DeckFactory.MonoGreenVanilla();
+        }
+
+        public Player()
+        {
+            
+        }
+
+        public void PlayLand(Land land)
+        {
+            Land landToRemove = (Land)Hand.FirstOrDefault(l => l.Id == land.Id);
+            if (landToRemove != null)
+            {
+                Hand.Remove(landToRemove);
+                Battlefield.Add(land);
+                ManaPool.Add(land.ProducedMana, land);
+            }
+        }
+
+        public void DrawCard()
+        {
+            if (Deck.Cards.Count == 0)
+            {
+                throw new InvalidOperationException("Player has no more cards to draw.");
+            }
+
+            Card drawnCard = Deck.Cards.First();
+            Deck.Cards.RemoveAt(0);
+            Hand.Add(drawnCard);
+        }
+
+        public List<Creature> AssignBlockers(List<Creature> attackingCreatures)
+        {
+            var blockingCreatures = new List<Creature>();
+
+            foreach (var attacker in attackingCreatures)
+            {
+                var blocker = Battlefield.OfType<Creature>().FirstOrDefault(c => !c.IsAttacking);
+                if (blocker != null)
+                {
+                    attacker.IsBlocked = true;
+                    attacker.BlockedBy = blocker;
+                    blockingCreatures.Add(blocker);
+                }
+            }
+
+            return blockingCreatures;
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: CardDTO.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\DTO\CardDTO.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+
+namespace Aurora.DTO
+{
+
+    [JsonDerivedType(typeof(CreatureDTO))]
+    [JsonDerivedType(typeof(LandDTO))]
+    public class CardDTO
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public bool IsTapped { get; set; } = false;
+        public virtual string Type { get; set; } = "Card";
+    }
+}
+
+--------------------------------------------------
+Filename: CreatureDTO.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\DTO\CreatureDTO.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.DTO
+{
+    public class CreatureDTO : CardDTO
+    {
+        public List<string> ManaCost { get; set; }
+        public int Power { get; set; }
+        public int Toughness { get; set; }
+        public bool IsAttacking { get; set; }
+        public bool IsBlocked { get; set; }
+        public CreatureDTO BlockedBy { get; set; }
+        public override string Type { get; set; } = "Creature";
+    }
+}
+
+--------------------------------------------------
+Filename: GameDTO.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\DTO\GameDTO.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Text.Json.Serialization;
+
+namespace Aurora.DTO
+{
+    public class GameDTO
+    {
+        public string Id { get; set; }
+        public List<PlayerDTO> Players { get; set; }
+        public int CurrentPlayerIndex { get; set; }
+        public bool IsGameOver { get; set; }
+        public PlayerDTO Winner { get; set; }
+        public string CurrentPhase { get; set; }
+    }
+}
+
+--------------------------------------------------
+Filename: LandDTO.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\DTO\LandDTO.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.DTO
+{
+    public class LandDTO : CardDTO
+    {
+        public string LandType { get; set; }
+        public override string Type { get; set; } = "Land";
+    }
+}
+
+--------------------------------------------------
+Filename: ManaPoolDTO.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\DTO\ManaPoolDTO.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.DTO
+{
+    public class ManaPoolDTO
+    {
+        public Dictionary<string, int> Mana { get; set; }
+    }
+}
+
+--------------------------------------------------
+Filename: PlayerDTO.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\DTO\PlayerDTO.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.DTO
+{
+    public class PlayerDTO
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public List<CardDTO> Hand { get; set; }
+        public List<CardDTO> Battlefield { get; set; }
+        public int Life { get; set; }
+    }
+}
+
+--------------------------------------------------
+Filename: AlreadyPlayedALandExpection.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Exceptions\AlreadyPlayedALandExpection.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Exceptions
+{
+    public class AlreadyPlayedALandExpection : Exception
+    {
+        public AlreadyPlayedALandExpection(string message) : base(message)
+        {
+            
+        }
+
+        public AlreadyPlayedALandExpection(string message, Exception innerException) : base(message, innerException)
+        {
+            
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: GameNotFoundException.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Exceptions\GameNotFoundException.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Exceptions
+{
+    public class GameNotFoundException : Exception
+    {
+        public GameNotFoundException(string message) : base(message) { }
+    }
+}
+
+--------------------------------------------------
+Filename: InvalidMoveException.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Exceptions\InvalidMoveException.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Exceptions
+{
+    public class InvalidMoveException : Exception
+    {
+        public InvalidMoveException(string message) : base(message) { }
+        public InvalidMoveException(string message,  Exception innerException) : base(message, innerException) { }
+    }
+}
+
+--------------------------------------------------
+Filename: InvalidPhaseException.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Exceptions\InvalidPhaseException.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Exceptions
+{
+    public class InvalidPhaseException : Exception
+    {
+        public InvalidPhaseException(string message) : base(message)
+        {
+            
+        }
+
+        public InvalidPhaseException(string message, Exception innerException) : base(message, innerException)
+        {
+            
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: PlayerNotFoundException.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Exceptions\PlayerNotFoundException.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Exceptions
+{
+    public class PlayerNotFoundException : Exception
+    {
+        public PlayerNotFoundException(string message) : base(message) { }
+    }
+}
+
+--------------------------------------------------
+Filename: .NETCoreApp,Version=v8.0.AssemblyAttributes.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\obj\Debug\net8.0\.NETCoreApp,Version=v8.0.AssemblyAttributes.cs
+Content:
+// <autogenerated />
+using System;
+using System.Reflection;
+[assembly: global::System.Runtime.Versioning.TargetFrameworkAttribute(".NETCoreApp,Version=v8.0", FrameworkDisplayName = ".NET 8.0")]
+
+--------------------------------------------------
+Filename: Aurora.AssemblyInfo.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\obj\Debug\net8.0\Aurora.AssemblyInfo.cs
+Content:
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+using System;
+using System.Reflection;
+
+[assembly: System.Reflection.AssemblyCompanyAttribute("Aurora")]
+[assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a43e17461ac5def971936e67a63cc4de7b78f77c")]
+[assembly: System.Reflection.AssemblyProductAttribute("Aurora")]
+[assembly: System.Reflection.AssemblyTitleAttribute("Aurora")]
+[assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
+
+// Generated by the MSBuild WriteCodeFragment class.
+
+
+--------------------------------------------------
+Filename: Aurora.GlobalUsings.g.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\obj\Debug\net8.0\Aurora.GlobalUsings.g.cs
+Content:
+// <auto-generated/>
+global using global::System;
+global using global::System.Collections.Generic;
+global using global::System.IO;
+global using global::System.Linq;
+global using global::System.Net.Http;
+global using global::System.Threading;
+global using global::System.Threading.Tasks;
+
+--------------------------------------------------
+Filename: CardConverter.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\CardConverter.cs
+Content:
+﻿using Aurora.DTO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+    public class CardConverter : ICardConverter
+    {
+        public CardDTO ConvertToCardDTO(Card card)
+        {
+            switch (card)
+            {
+                case Creature creature:
+                    return new CreatureDTO
+                    {
+                        Id = creature.Id,
+                        Name = creature.Name,
+                        Power = creature.Power,
+                        Toughness = creature.Toughness,
+                        ManaCost = creature.ManaCost.Select(m => m.ToString()).ToList(),
+                        IsTapped = creature.IsTapped,
+                        IsAttacking = creature.IsAttacking,
+                        IsBlocked = creature.IsBlocked,
+                        BlockedBy = creature.BlockedBy != null ? ConvertToCardDTO(creature.BlockedBy) as CreatureDTO : null
+                    };
+
+                case Land land:
+                    return new LandDTO
+                    {
+                        Id = land.Id,
+                        Name = land.Name,
+                        LandType = land.Type.ToString(),
+                        IsTapped = land.IsTapped
+                    };
+
+                default:
+                    return new CardDTO
+                    {
+                        Id = card.Id,
+                        Name = card.Name
+                    };
+            }
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: GameManager.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\GameManager.cs
+Content:
+﻿using Aurora.DTO;
+using Aurora.Exceptions;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+	public class GameManager : IGameManager
+	{
+		private readonly ILogger<GameManager> _logger;
+		private readonly IGameStorage _games;
+        private readonly ICardConverter _cardConverter;
+
+        public GameManager(ILogger<GameManager> logger, IGameStorage gameStorage, ICardConverter cardConverter) 
+		{
+			this._logger = logger;
+			this._games = gameStorage;
+            this._cardConverter = cardConverter;
+        }
+
+        public GameDTO AdvanceToNextPhase(string gameId)
+        {
+            try
+			{
+                if (!_games.TryGetGame(gameId, out var game))
+                {
+                    throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+                }
+				game.AdvanceToNextPhase();
+				return CreateGameDTOFromGame(game);
+            }
+            catch (GameNotFoundException ex)
+            {
+                _logger.LogError(ex, "Game not found");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while advancing to the next phase.");
+                throw new InvalidOperationException("An error occurred while advancing to the next phase.", ex);
+            }
+        }
+
+        public GameDTO CreateGame(string playerName)
+		{
+			var game = new Game(new List<Player>() {
+		new Player(playerName),
+		new Player("AI")
+	});
+			_games.AddGame(game);
+
+			return CreateGameDTOFromGame(game);
+		}
+
+		public GameDTO GetGameState(string gameId)
+		{
+			try
+            {
+                if (!_games.TryGetGame(gameId, out var game))
+                {
+                    throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+                }
+                return CreateGameDTOFromGame(game);
+            }
+            catch (GameNotFoundException ex)
+			{
+				_logger.LogError(ex, "Game not found");
+				throw;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "An error occurred while retrieving the game state.");
+				throw new InvalidOperationException("An error occurred while retrieving the game state.", ex);
+			}
+		}
+
+        public GameDTO StartGame(List<PlayerDTO> playerDTOs)
+		{
+			try
+			{
+				var players = playerDTOs.Select(p => new Player
+				{
+					Id = p.Id,
+					Name = p.Name,
+					Life = p.Life
+				}).ToList();
+
+				var game = new Game(players);
+				_games.AddGame(game);
+
+				return CreateGameDTOFromGame(game);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Failed to start the game.");
+				throw new InvalidOperationException("Failed to start the game.", ex);
+			}
+		}
+
+		public GameDTO SwitchTurn(string gameId)
+		{
+			try
+			{
+				if (!_games.TryGetGame(gameId, out var game))
+				{
+					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+				}
+
+				game.SwitchTurn();
+				return GetGameState(gameId);
+			}
+			catch (GameNotFoundException ex)
+			{
+				_logger.LogError(ex, "Game not found");
+				throw;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "An error occurred while switching turns.");
+				throw new InvalidOperationException("An error occurred while switching turns.", ex);
+			}
+		}
+
+        private GameDTO CreateGameDTOFromGame(Game game)
+        {
+            return new GameDTO
+            {
+                Id = game.Id,
+                Players = game.Players.Select(p => new PlayerDTO
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Hand = p.Hand.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+                    Battlefield = p.Battlefield.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+                    Life = p.Life
+                }).ToList(),
+                CurrentPlayerIndex = game.currentPlayerIndex,
+                IsGameOver = game.IsGameOver,
+                Winner = game.Winner != null ? new PlayerDTO
+                {
+                    Id = game.Winner.Id,
+                    Name = game.Winner.Name,
+                    Life = game.Winner.Life
+                } : null,
+                CurrentPhase = game.CurrentPhase.ToString(),
+            };
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: GameQueryService.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\GameQueryService.cs
+Content:
+﻿using Aurora.DTO;
+using Aurora.Exceptions;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+	public class GameQueryService : IGameQueryService
+	{
+		private readonly ILogger<GameQueryService> _logger;
+		private readonly IGameStorage _games;
+        private readonly ICardConverter _cardConverter;
+
+        public GameQueryService(ILogger<GameQueryService> _logger, IGameStorage _games, ICardConverter cardConverter)
+        {
+            this._logger = _logger;
+            this._games = _games;
+            _cardConverter = cardConverter;
+        }
+
+        public CreatureDTO GetCreatureById(string creatureId)
+		{
+            var games = _games.GetAllGames();
+			var game = games.FirstOrDefault(g => g.Players.Any(p => p.Hand.Any(c => c.Id == creatureId && c is Creature)));
+
+			if (game == null)
+			{
+				return null;
+			}
+
+			var creature = game.Players.SelectMany(p => p.Hand).OfType<Creature>().FirstOrDefault(c => c.Id == creatureId);
+
+			if (creature == null)
+			{
+				return null;
+			}
+
+			return new CreatureDTO
+			{
+				Id = creature.Id,
+				Name = creature.Name,
+				ManaCost = creature.ManaCost.Select(m => m.ToString()).ToList(),
+				Power = creature.Power,
+				Toughness = creature.Toughness
+			};
+		}
+
+        public LandDTO GetLandById(string landId)
+        {
+            var games = _games.GetAllGames();
+            var game = games.FirstOrDefault(g => g.Players.Any(p => p.Hand.Any(c => c.Id == landId && c is Land)));
+
+            if (game == null)
+            {
+                return null;
+            }
+
+            var land = game.Players.SelectMany(p => p.Hand).OfType<Land>().FirstOrDefault(l => l.Id == landId);
+
+            if (land == null)
+            {
+                return null;
+            }
+
+            return new LandDTO
+            {
+                Id = land.Id,
+                LandType = land.Type.ToString()
+            };
+        }
+
+        public PlayerDTO GetPlayerInfo(string gameId, string playerId)
+        {
+            try
+            {
+                if (!_games.TryGetGame(gameId, out var game))
+                {
+                    throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+                }
+
+                var player = game.Players.FirstOrDefault(p => p.Id == playerId);
+                if (player == null)
+                {
+                    throw new PlayerNotFoundException($"Player with ID '{playerId}' not found in the game.");
+                }
+
+                return new PlayerDTO
+                {
+                    Id = player.Id,
+                    Name = player.Name,
+                    Hand = player.Hand.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+                    Battlefield = player.Battlefield.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+                    Life = player.Life
+                };
+            }
+            catch (GameNotFoundException ex)
+            {
+                _logger.LogError(ex, "Game not found");
+                throw;
+            }
+            catch (PlayerNotFoundException ex)
+            {
+                _logger.LogError(ex, "Player not found");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving player information.");
+                throw new InvalidOperationException("An error occurred while retrieving player information.", ex);
+            }
+        }
+    }
+
+		
+}
+
+--------------------------------------------------
+Filename: GameService.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\GameService.cs
+Content:
+﻿using Aurora.DTO;
+using Aurora.Exceptions;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
+namespace Aurora.Services
+{
+    public class GameService : IGameService
+    {
+        private readonly ILogger<GameService> _logger;
+        private readonly IGameManager _gameManager;
+        private readonly IPlayerActionService _playerActionService;
+        private readonly IGameQueryService _gameQueryService;
+        private readonly ICardConverter _cardConverter;
+        public GameService(ILogger<GameService> logger, IGameManager gameManager, IPlayerActionService playerActionService, IGameQueryService gameQueryService, ICardConverter cardConverter)
+        {
+            _logger = logger;
+            _gameManager = gameManager;
+            _playerActionService = playerActionService;
+            _gameQueryService = gameQueryService;
+            _cardConverter = cardConverter;
+        }
+
+        public GameDTO CreateGame(string playerName)
+        {
+            return _gameManager.CreateGame(playerName);
+        }
+
+        public GameDTO StartGame(List<PlayerDTO> playerDTOs)
+        {
+            return _gameManager.StartGame(playerDTOs);
+        }
+
+        public GameDTO PlayLand(string gameId, string playerId, LandDTO landDTO)
+        {
+            return _playerActionService.PlayLand(gameId, playerId, landDTO);
+        }
+
+        public GameDTO CastCreature(string gameId, string playerId, CreatureDTO creatureDTO)
+        {
+            return _playerActionService.CastCreature(gameId, playerId, creatureDTO);
+        }
+
+        public GameDTO Attack(string gameId, string attackingPlayerId, List<string> attackingCreatureIds)
+        {
+            return _playerActionService.Attack(gameId, attackingPlayerId, attackingCreatureIds);
+        }
+
+        public GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments)
+        {
+            return _playerActionService.AssignBlockers(gameId, defendingPlayerId, blockerAssignments);
+        }
+
+        public GameDTO SwitchTurn(string gameId)
+        {
+            return _gameManager.SwitchTurn(gameId);
+        }
+
+        public GameDTO GetGameState(string gameId)
+        {
+            return _gameManager.GetGameState(gameId);
+        }
+
+        public PlayerDTO GetPlayerInfo(string gameId, string playerId)
+        {
+            return _gameQueryService.GetPlayerInfo(gameId, playerId);
+        }
+
+        public LandDTO GetLandById(string landId)
+        {
+            return _gameQueryService.GetLandById(landId);
+        }
+
+        public CreatureDTO GetCreatureById(string creatureId)
+        {
+            return _gameQueryService.GetCreatureById(creatureId);
+        }
+
+        public GameDTO AdvanceToNextPhase(string gameId)
+        {
+            return _gameManager.AdvanceToNextPhase(gameId);
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: ICardConverter.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\ICardConverter.cs
+Content:
+﻿using Aurora.DTO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+    public interface ICardConverter
+    {
+        CardDTO ConvertToCardDTO(Card card);
+    }
+}
+
+--------------------------------------------------
+Filename: IGameManager.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\IGameManager.cs
+Content:
+﻿using Aurora.DTO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+	public interface IGameManager
+	{
+		GameDTO CreateGame(string playerName);
+		GameDTO StartGame(List<PlayerDTO> playerDTOs);
+		GameDTO GetGameState(string gameId);
+		GameDTO AdvanceToNextPhase(string gameId);
+
+        GameDTO SwitchTurn(string gameId);
+	}
+}
+
+--------------------------------------------------
+Filename: IGameQueryService.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\IGameQueryService.cs
+Content:
+﻿using Aurora.DTO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+	public interface IGameQueryService
+	{
+		PlayerDTO GetPlayerInfo(string gameId, string playerId);
+		LandDTO GetLandById(string landId);
+		CreatureDTO GetCreatureById(string creatureId);
+	}
+}
+
+--------------------------------------------------
+Filename: IGameService.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\IGameService.cs
+Content:
+﻿using Aurora.DTO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+    public interface IGameService
+    {
+        GameDTO CreateGame(string playerName);
+        GameDTO StartGame(List<PlayerDTO> playerDTOs);
+        GameDTO PlayLand(string gameId, string playerId, LandDTO landDTO);
+        GameDTO CastCreature(string gameId, string playerId, CreatureDTO creatureDTO);
+        GameDTO Attack(string gameId, string attackingPlayerId, List<string> attackingCreatureIds);
+        GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments);
+        GameDTO SwitchTurn(string gameId);
+        GameDTO GetGameState(string gameId);
+        GameDTO AdvanceToNextPhase(string gameId);
+        PlayerDTO GetPlayerInfo(string gameId, string playerId);
+        LandDTO GetLandById(string landId);
+        CreatureDTO GetCreatureById(string creatureId);
+    }
+}
+
+--------------------------------------------------
+Filename: IGameStorage.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\IGameStorage.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+    public interface IGameStorage
+    {
+        void AddGame(Game game);
+        Game GetGame(string Id);
+        bool TryGetGame(string Id, out Game game);
+        void RemoveGame(string Id);
+        IEnumerable<Game> GetAllGames();
+    }
+}
+
+--------------------------------------------------
+Filename: InMemoryGameStorage.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\InMemoryGameStorage.cs
+Content:
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+    public class InMemoryGameStorage : IGameStorage
+    {
+        private readonly Dictionary<string, Game> _games = new Dictionary<string, Game>();
+        public void AddGame(Game game)
+        {
+            _games[game.Id] = game;
+        }
+
+        public IEnumerable<Game> GetAllGames()
+        {
+            return _games.Values;
+        }
+
+        public Game GetGame(string Id)
+        {
+            return _games[Id];
+        }
+
+        public void RemoveGame(string Id)
+        {
+            _games.Remove(Id);
+        }
+
+        public bool TryGetGame(string Id, out Game game)
+        {
+            return _games.TryGetValue(Id, out game);
+        }
+    }
+}
+
+--------------------------------------------------
+Filename: IPlayerActionService.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\IPlayerActionService.cs
+Content:
+﻿using Aurora.DTO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+	public interface IPlayerActionService
+	{
+		GameDTO PlayLand(string gameId, string playerId, LandDTO landDTO);
+		GameDTO CastCreature(string gameId, string playerId, CreatureDTO creatureDTO);
+		GameDTO Attack(string gameId, string attackingPlayerId, List<string> attackingCreatureIds);
+		GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments);
+	}
+}
+
+--------------------------------------------------
+Filename: PlayerActionService.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\Services\PlayerActionService.cs
+Content:
+﻿using Aurora.DTO;
+using Aurora.Exceptions;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora.Services
+{
+	public class PlayerActionService : IPlayerActionService
+	{
+		private readonly ILogger<PlayerActionService> _logger;
+        private readonly IGameStorage _games;
+        private readonly IGameManager _gameManager;
+
+        public PlayerActionService(ILogger<PlayerActionService> _logger, IGameStorage _games, IGameManager _gameManager)
+		{
+			this._logger = _logger;
+            this._games = _games;
+            this._gameManager = _gameManager;
+        }
+		public GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments)
+		{
+			try
+			{
+				if (!_games.TryGetGame(gameId, out var game))
+				{
+					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+				}
+
+				var defendingPlayer = game.Players.FirstOrDefault(p => p.Id == defendingPlayerId);
+				if (defendingPlayer == null)
+				{
+					throw new PlayerNotFoundException($"Defending player with ID '{defendingPlayerId}' not found in the game.");
+				}
+
+				var blockingCreatures = new Dictionary<Creature, Creature>();
+				foreach (var assignment in blockerAssignments)
+				{
+					var attackingCreature = game.Players.SelectMany(p => p.Battlefield).OfType<Creature>().FirstOrDefault(c => c.Id == assignment.Key);
+					var blockingCreature = defendingPlayer.Battlefield.OfType<Creature>().FirstOrDefault(c => c.Id == assignment.Value);
+
+					if (attackingCreature != null && blockingCreature != null)
+					{
+						blockingCreatures[attackingCreature] = blockingCreature;
+					}
+				}
+
+				game.AssignBlockers(defendingPlayer, blockingCreatures);
+
+				return _gameManager.GetGameState(gameId);
+			}
+			catch (GameNotFoundException ex)
+			{
+				_logger.LogError(ex, "Game not found");
+				throw;
+			}
+			catch (PlayerNotFoundException ex)
+			{
+				_logger.LogError(ex, "Player not found");
+				throw;
+			}
+		}
+
+		public GameDTO Attack(string gameId, string attackingPlayerId, List<string> attackingCreatureIds)
+		{
+			try
+			{
+				if (!_games.TryGetGame(gameId, out var game))
+				{
+					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+				}
+
+				var attackingPlayer = game.Players.FirstOrDefault(p => p.Id == attackingPlayerId);
+				if (attackingPlayer == null)
+				{
+					throw new PlayerNotFoundException($"Attacking player with ID '{attackingPlayerId}' not found in the game.");
+				}
+
+				if (game._hasAttackedThisTurn)
+				{
+					throw new InvalidMoveException($"{game.GetCurrentPlayer().Name} has already attacked this turn");
+				}
+
+				var attackingCreatures = attackingPlayer.Battlefield.OfType<Creature>()
+					.Where(c => attackingCreatureIds.Contains(c.Id)).ToList();
+
+				game.DeclareAttackers(attackingPlayer, attackingCreatures);
+
+				return _gameManager.GetGameState(gameId);
+			}
+			catch (GameNotFoundException ex)
+			{
+				_logger.LogError(ex, "Game not Found");
+				throw;
+			}
+			catch (PlayerNotFoundException ex)
+			{
+				_logger.LogError(ex, "Player not Found");
+				throw;
+			}
+			catch (InvalidOperationException ex)
+			{
+				_logger.LogError(ex, "Invalid move. " + ex.Message);
+				throw new InvalidMoveException("Invalid move. " + ex.Message, ex);
+			}
+			catch(InvalidPhaseException ex)
+			{
+				_logger.LogError(ex, "Can only attack in the combat phase");
+				throw new InvalidPhaseException("Can only attack in the combat phase");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "An error occurred while attacking.");
+				throw new InvalidOperationException("An error occurred while attacking.", ex);
+			}
+		}
+
+		public GameDTO CastCreature(string gameId, string playerId, CreatureDTO creatureDTO)
+		{
+			try
+			{
+				if (!_games.TryGetGame(gameId, out var game))
+				{
+					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+				}
+
+				var player = game.Players.FirstOrDefault(p => p.Id == playerId);
+				if (player == null)
+				{
+					throw new PlayerNotFoundException($"Player with ID '{playerId}' not found in the game.");
+				}
+
+				var creature = new Creature(creatureDTO.Name,
+					creatureDTO.ManaCost.Select(mana => (Mana)Enum.Parse(typeof(Mana), mana)).ToList(),
+					creatureDTO.Power, creatureDTO.Toughness)
+				{
+					Id = creatureDTO.Id,
+					IsAttacking = creatureDTO.IsAttacking,
+					IsBlocked = creatureDTO.IsBlocked,
+					BlockedBy = creatureDTO.BlockedBy != null ? new Creature(creatureDTO.BlockedBy.Name,
+					creatureDTO.BlockedBy.ManaCost.Select(mana => (Mana)Enum.Parse(typeof(Mana), mana)).ToList(),
+					creatureDTO.BlockedBy.Power, creatureDTO.BlockedBy.Toughness)
+					{
+						Id = creatureDTO.BlockedBy.Id
+					} : null
+				};
+
+				game.CastCreature(player, creature);
+				return _gameManager.GetGameState(gameId);
+			}
+			catch (GameNotFoundException ex)
+			{
+				_logger.LogError(ex, "Game not Found");
+				throw;
+			}
+			catch (PlayerNotFoundException ex)
+			{
+				_logger.LogError(ex, "Player not Found");
+				throw;
+			}
+			catch (InvalidOperationException ex)
+			{
+				_logger.LogError(ex, "Invalid Move" + ex.Message);
+				throw new InvalidMoveException("Invalid move. " + ex.Message, ex);
+			}
+			catch (InvalidPhaseException ex)
+			{
+				_logger.LogError(ex, "Can only play creatures in first or second mainphase");
+				throw new InvalidPhaseException("Can only play creatures in first or second mainphase");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "An error occurred while casting a creature.");
+				throw new InvalidOperationException("An error occurred while casting a creature.", ex);
+			}
+		}
+
+		public GameDTO PlayLand(string gameId, string playerId, LandDTO landDTO)
+		{
+			try
+			{
+				if (!_games.TryGetGame(gameId, out var game))
+				{
+					throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
+				}
+
+				var player = game.Players.FirstOrDefault(p => p.Id == playerId);
+				if (player == null)
+				{
+					throw new PlayerNotFoundException($"Player with ID '{playerId}' not found in the game.");
+				}
+
+				var land = new Land((LandType)Enum.Parse(typeof(LandType), landDTO.LandType.ToString()))
+				{
+					Id = landDTO.Id,
+					IsTapped = landDTO.IsTapped
+				};
+
+				game.PlayLand(player, land);
+				return _gameManager.GetGameState(gameId);
+			}
+			catch (GameNotFoundException ex)
+			{
+				_logger.LogError(ex, $"Game with ID '{gameId}' not found.");
+				throw;
+			}
+			catch (PlayerNotFoundException ex)
+			{
+				_logger.LogError(ex, $"Player with ID '{playerId}' not found in the game.");
+				throw;
+			}
+			catch (InvalidOperationException ex)
+			{
+				_logger.LogError(ex, "Invalid move. " + ex.Message);
+				throw new InvalidMoveException("Invalid move. " + ex.Message, ex);
+			}
+            catch (InvalidPhaseException ex)
+            {
+                _logger.LogError(ex, "Invalid move. " + ex.Message);
+                throw new InvalidMoveException("Invalid move. " + ex.Message, ex);
+            }
+            catch (Exception ex)
+			{
+				_logger.LogError(ex, "An error occurred while playing a land.");
+				throw new InvalidOperationException("An error occurred while playing a land.", ex);
+			}
+		}
+	}
+}
+
+--------------------------------------------------

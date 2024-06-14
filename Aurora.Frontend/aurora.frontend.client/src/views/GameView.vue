@@ -31,10 +31,9 @@
       <Deck position="bottom" :cardCount="gameStore.players[0]?.deckCount || 0" />
     </div>
     <div class="pass-turn-button">
-      <button @click="gameStore.advancePhase">{{ gameStore.getNextPhase}}</button>
+      <button @click="gameStore.advancePhase">{{gameStore.getNextPhase}}</button>
     </div>
-    <BlockerModal
-    />
+    <BlockerModal v-if="gameStore.opponentIsAttacking" />
   </div>
 </template>
 
@@ -65,16 +64,15 @@ watch(
   }
 )
 
-watch(
-      () => gameStore.opponentIsAttacking,
-      (newValue, oldValue) => {
-        if (newValue && !oldValue) {
-          console.log('AI IS ATTACKING')
-          gameStore.promptForBlockers()
-        }
-      }
-    )
-    
+// watch(
+//   () => gameStore.currentPlayer,
+//   (newPlayer, oldPlayer) => {
+//     if (newPlayer.name !== 'Player') {
+//       gameStore.fetchGameState()
+//     }
+//   }
+// )
+
 </script>
 
 <style scoped>

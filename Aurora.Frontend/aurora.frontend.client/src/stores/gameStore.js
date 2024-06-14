@@ -37,6 +37,10 @@ export const useGameStore = defineStore('game', {
       this.winner = gameState.winner
       this.currentPhase = gameState.currentPhase
       console.log('Gamestate updated:', gameState)
+
+      if (this.opponentIsAttacking) {
+        this.promptForBlockers()
+      }
     },
     clearAttackingCreatures() {
       this.attackingCreatureIds = []
@@ -80,38 +84,40 @@ export const useGameStore = defineStore('game', {
         const defendingPlayer = this.players.find((player) => player.id === opponentId)
         if (defendingPlayer) {
           this.defendingCreatures = defendingPlayer.battlefield.filter((creature) => !creature.isAttacking)
+          console.log('Updated defendingCreatures:', this.defendingCreatures); // Log defendingCreatures
         }
-        this.promptForBlockers()
       } catch (error) {
         console.error('Error attacking', error)
       }
     },
     
     promptForBlockers() {
-      const opponentId = this.players.find((player) => player.id !== this.currentPlayer.id)?.id;
-    if (opponentId) {
-      const opponentPlayer = this.players.find((player) => player.id === opponentId);
-      const opponentAttackingCreatures = opponentPlayer.battlefield.filter((creature) => creature.isAttacking);
+      const aiPlayer = this.players.find((player) => player.name === 'AI');
+      if (aiPlayer) {
+        const opponentAttackingCreatures = aiPlayer.battlefield.filter((creature) => creature.isAttacking);
 
-      if (opponentAttackingCreatures.length > 0) {
-        this.attackingCreatures = opponentAttackingCreatures;
-        this.defendingCreatures = this.currentPlayer.battlefield.filter((creature) => !creature.isAttacking);
-        this.showBlockerModal = true;
+        if (opponentAttackingCreatures.length > 0) {
+          this.attackingCreatures = opponentAttackingCreatures;
+          this.defendingCreatures = this.players[0].battlefield.filter((creature) => !creature.isAttacking);
+          console.log('Prompting for blockers with defendingCreatures:', this.defendingCreatures); // Log defendingCreatures
+          this.showBlockerModal = true;
+          this.fetchGameState(); // Fetch game state before showing the modal
+        }
       }
-    }
-
     },
+
     async assignBlockers(defendingPlayerId, blockerAssignments) {
       try {
-        const response = await assignBlockersAPI(this.gameId, defendingPlayerId, blockerAssignments)
-        this.attackingCreatures = []
-        this.defendingCreatures = []
+        const response = await assignBlockersAPI(this.gameId, defendingPlayerId, blockerAssignments);
+        this.attackingCreatures = [];
+        this.defendingCreatures = [];
         for (const player of response.data.players) {
           for (const creature of player.battlefield) {
-            creature.isAttacking = false
+            creature.isAttacking = false;
           }
         }
-        this.updateGameState(response.data)
+        this.updateGameState(response.data);
+        this.fetchGameState(); // Ensure fresh data after assigning blockers
       } catch (error) {
         console.error('Error assigning blockers:', error)
       }
@@ -127,17 +133,19 @@ export const useGameStore = defineStore('game', {
     },
   },
   getters: {
-    
     opponentIsAttacking() {
-      const opponentId = this.players.find((player) => player.id !== this.currentPlayer.id)?.id
-      if (opponentId) {
-        const opponentPlayer = this.players.find((player) => player.id === opponentId)
-        return opponentPlayer.battlefield.some((creature) => creature.isAttacking)
+      const aiPlayerId = this.players.find((player) => player.name === 'AI')?.id
+      if (aiPlayerId) {
+        const aiPlayer = this.players.find((player) => player.id === aiPlayerId)
+        const isAttacking = aiPlayer.battlefield.some((creature) => creature.isAttacking)
+        console.log('AI is attacking:', isAttacking)
+        
+        return isAttacking
       }
+      console.log('AI not found or not attacking')
       return false
     },
-    getNextPhase()
-    {
+    getNextPhase() {
       const phases = [
         'Beginning',
         'MainPhase1',
