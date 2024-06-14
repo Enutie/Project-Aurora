@@ -79,11 +79,7 @@ namespace Aurora
                     StartEndPhase();
                     break;
                 case Phase.Ending:
-                    if (SwitchTurn())
-                    {
-                        AssignBlockers(Players[0], []);
-                        SwitchTurn();
-                    }
+                    SwitchTurn();
                     break;
                 default:
                     throw new InvalidOperationException("Unknown phase.");
@@ -245,17 +241,12 @@ namespace Aurora
                 AdvanceToNextPhase();
                 if (AIAttackAction())
                 {
-                    return true;
+                    return true; // Return true to indicate that the AI has declared attackers
 
                 }
                 else
                 {
-                    AdvanceToNextPhase();
-                    //Do secondmain stuff
-                    AdvanceToNextPhase();
-
-                    SwitchTurn();
-                    return false;
+                    return PostCombatAITurn();
                 }
             }
             else
@@ -264,6 +255,15 @@ namespace Aurora
             }
         }
 
+        public bool PostCombatAITurn()
+        {
+            AdvanceToNextPhase();
+            //Do secondmain stuff
+            AdvanceToNextPhase();
+
+            SwitchTurn();
+            return false;
+        }
 
         public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
         {
@@ -298,20 +298,14 @@ namespace Aurora
         private bool AIAttackAction()
         {
             Player aiPlayer = Players[1];
-            List<Creature> attackingCreatures = [];
-            foreach (var card in aiPlayer.Battlefield)
+            List<Creature> attackingCreatures = aiPlayer.Battlefield.OfType<Creature>().Where(c => !c.IsTapped).ToList();
+
+            if (attackingCreatures.Any())
             {
-                if (card is Creature creature && !creature.IsTapped)
-                {
-                    attackingCreatures.Add(creature);
-                }
+                DeclareAttackers(aiPlayer, attackingCreatures);
+                return true; // Return true to indicate that the AI has declared attackers
             }
-            DeclareAttackers(aiPlayer, attackingCreatures);
-            if (Players[0].Battlefield.Select(c => c.IsTapped == false).Count() > 0)
-            {
-                return true;
-            }
-            AssignBlockers(Players[0], []);
+
             return false;
         }
 

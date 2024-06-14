@@ -50,7 +50,12 @@ namespace Aurora.Services
 
 				game.AssignBlockers(defendingPlayer, blockingCreatures);
 
-				return _gameManager.GetGameState(gameId);
+				if(game.GetCurrentPlayer() == game.Players[1])
+				{
+					game.PostCombatAITurn();
+				}
+
+                return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)
 			{
@@ -89,8 +94,17 @@ namespace Aurora.Services
 
 				game.DeclareAttackers(attackingPlayer, attackingCreatures);
 
-				return _gameManager.GetGameState(gameId);
-			}
+                if (attackingPlayer == game.Players[1]) // If the attacking player is the AI
+                {
+                    // Return the updated game state to prompt the human player to declare blockers
+                    return _gameManager.GetGameState(gameId);
+                }
+                else
+                {
+                    // For human player attacks, proceed with the existing flow
+                    return _gameManager.GetGameState(gameId);
+                }
+            }
 			catch (GameNotFoundException ex)
 			{
 				_logger.LogError(ex, "Game not Found");
