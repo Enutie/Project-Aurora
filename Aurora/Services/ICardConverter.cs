@@ -10,5 +10,8 @@ namespace Aurora.Services
     public interface ICardConverter
     {
         CardDTO ConvertToCardDTO(Card card);
+        PlayerDTO ConvertToPlayerDTO(Player player);
+        Land ConvertToLand(LandDTO land);
+        Creature ConvertToCreature(CreatureDTO creature);
     }
 }

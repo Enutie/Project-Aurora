@@ -1,4 +1,6 @@
-﻿using Aurora.Exceptions;
+﻿using Aurora.DTO;
+using Aurora.Exceptions;
+using Aurora.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,21 +14,22 @@ namespace Aurora
         public List<Player> Players { get; } = new List<Player>();
         public int currentPlayerIndex { get; set; } = 0;
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        private Dictionary<Player, int> _landsPlayedThisTurn = new Dictionary<Player, int>();
+        private Dictionary<string, int> _landsPlayedThisTurn = new Dictionary<string, int>();
         public bool _hasAttackedThisTurn = false;
         public bool IsGameOver { get; private set; }
-        public Player Winner { get; private set; }
+        public PlayerDTO Winner { get; private set; }
         public Phase CurrentPhase { get; private set; }
 
         private Player _attackingPlayer;
         private Player _defendingPlayer;
         private List<Creature> _attackingCreatures;
         private Dictionary<Creature, Creature> _blockingCreatures;
+        private readonly ICardConverter _cardConverter;
 
-        public Game(List<Player> players)
+        public Game(List<Player> players, ICardConverter cardConverter)
         {
             Players = players;
-
+            _cardConverter = cardConverter;
             foreach (Player player in Players)
             {
                 player.Deck.Shuffle();
@@ -37,7 +40,7 @@ namespace Aurora
         public void StartBeginningPhase()
         {
             CurrentPhase = Phase.Beginning;
-            _landsPlayedThisTurn[GetCurrentPlayer()] = 0;
+            _landsPlayedThisTurn[GetCurrentPlayerId()] = 0;
             _hasAttackedThisTurn = false;
             UntapPermanents(GetCurrentPlayer());
             DrawCard(GetCurrentPlayer());
@@ -91,8 +94,7 @@ namespace Aurora
             {
                 if (player.Life <= 0 || player.Deck.Cards.Count == 0)
                 {
-                    IsGameOver = true;
-                    Winner = Players.FirstOrDefault(p => p != player);
+                    SetWinner(player);
                     break;
                 }
             }
@@ -106,9 +108,30 @@ namespace Aurora
             }
         }
 
-        public Player GetCurrentPlayer()
+        private void SetWinner(Player player)
+        {
+            IsGameOver = true;
+            Winner = _cardConverter.ConvertToPlayerDTO(Players.FirstOrDefault(p => p != player));
+        }
+
+        public PlayerDTO GetCurrentPlayerDTO()
+        {
+            return _cardConverter.ConvertToPlayerDTO(Players[currentPlayerIndex]);
+        }
+
+        private Player GetCurrentPlayer()
         {
             return Players[currentPlayerIndex];
+        }
+
+        public string GetCurrentPlayerId()
+        {
+            return Players[currentPlayerIndex].Id;
+        }
+
+        public Player GetPlayerById(string id)
+        {
+            return Players.Where(p => p.Id == id).FirstOrDefault();
         }
 
         public void DrawCard(Player player)
@@ -119,8 +142,7 @@ namespace Aurora
             }
             catch (InvalidOperationException)
             {
-                IsGameOver = true;
-                Winner = Players.FirstOrDefault(p => p != player);
+                SetWinner(Players.FirstOrDefault(p => p != player));
             }
         }
 
@@ -151,24 +173,25 @@ namespace Aurora
             }
         }
 
-        public bool CanPlayLand(Player player)
+        public bool CanPlayLand(string playerId)
         {
-            if (!_landsPlayedThisTurn.ContainsKey(player))
+            if (!_landsPlayedThisTurn.ContainsKey(playerId))
             {
-                _landsPlayedThisTurn[player] = 0;
+                _landsPlayedThisTurn[playerId] = 0;
             }
-            return _landsPlayedThisTurn[player] == 0;
+            return _landsPlayedThisTurn[playerId] == 0;
         }
 
-        public void PlayLand(Player player, Land land)
+        public void PlayLand(string playerId, LandDTO landDTO)
         {
             if (CurrentPhase == Phase.MainPhase1 || CurrentPhase == Phase.MainPhase2)
             {
-
-                if (GetCurrentPlayer() == player && CanPlayLand(player))
+                var player = GetPlayerById(playerId);
+                if (GetCurrentPlayerId() == playerId && CanPlayLand(playerId))
                 {
+                    var land = _cardConverter.ConvertToLand(landDTO);
                     player.PlayLand(land);
-                    _landsPlayedThisTurn[player]++;
+                    _landsPlayedThisTurn[playerId]++;
                 }
                 else
                 {
@@ -181,12 +204,14 @@ namespace Aurora
             }
         }
 
-        public void CastCreature(Player player, Creature creature)
+        public void CastCreature(string playerId, CreatureDTO creatureDTO)
         {
             if (CurrentPhase == Phase.MainPhase1 || CurrentPhase == Phase.MainPhase2)
             {
-                var creatureToRemove = player.Hand.FirstOrDefault(c => c.Id == creature.Id);
-                if (creatureToRemove == null)
+                var player = GetPlayerById(playerId);
+                var creature = _cardConverter.ConvertToCreature(creatureDTO);
+
+                if (!player.Hand.Any(c => c.Id == creature.Id))
                 {
                     throw new InvalidMoveException("The creature is not in the player's hand.");
                 }
@@ -194,8 +219,7 @@ namespace Aurora
                 if (player.ManaPool.CanAfford(creature.ManaCost))
                 {
                     player.ManaPool.Spend(creature.ManaCost);
-
-                    player.Hand.Remove(creatureToRemove);
+                    player.Hand.RemoveAll(c => c.Id == creature.Id);
                     player.Battlefield.Add(creature);
                 }
                 else

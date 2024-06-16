@@ -38,8 +38,8 @@ namespace Aurora
             if (landToRemove != null)
             {
                 Hand.Remove(landToRemove);
-                Battlefield.Add(land);
-                ManaPool.Add(land.ProducedMana, land);
+                Battlefield.Add(landToRemove);
+                ManaPool.Add(landToRemove.ProducedMana, landToRemove);
             }
         }
 
@@ -55,22 +55,20 @@ namespace Aurora
             Hand.Add(drawnCard);
         }
 
-        public List<Creature> AssignBlockers(List<Creature> attackingCreatures)
+        public Dictionary<string, string> AssignBlockers(List<string> attackingCreatureIds)
         {
-            var blockingCreatures = new List<Creature>();
+            var blockingAssignments = new Dictionary<string, string>();
 
-            foreach (var attacker in attackingCreatures)
+            foreach (var attackerId in attackingCreatureIds)
             {
-                var blocker = Battlefield.OfType<Creature>().FirstOrDefault(c => !c.IsAttacking);
+                var blocker = Battlefield.OfType<Creature>().FirstOrDefault(c => !c.IsAttacking && !blockingAssignments.ContainsValue(c.Id));
                 if (blocker != null)
                 {
-                    attacker.IsBlocked = true;
-                    attacker.BlockedBy = blocker;
-                    blockingCreatures.Add(blocker);
+                    blockingAssignments[attackerId] = blocker.Id;
                 }
             }
 
-            return blockingCreatures;
+            return blockingAssignments;
         }
     }
 }
