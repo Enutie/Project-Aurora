@@ -58,11 +58,23 @@ namespace Aurora
 {
     public class Creature : Card
     {
+        public Creature(string name) : base(name)
+        {
+        }
+
+        public Creature(string name, IEnumerable<Mana> manaCost,
+            int power, int toughness): base(name)
+        {
+            ManaCost = manaCost;
+            Power = power;
+            Toughness = toughness;
+        }
+
         public IEnumerable<Mana> ManaCost { get; set; }
         public int Power { get; set; }
         public int Toughness { get; set; }
-        public bool IsAttacking { get; set; }
-        public bool IsBlocked { get; set; }
+        public bool IsAttacking { get; set; } = false;
+        public bool IsBlocked { get; set; } = false ;
         public Creature BlockedBy { get; set; }
 
         public void DealDamage(Creature target)
@@ -70,14 +82,6 @@ namespace Aurora
             target.Toughness -= Power;
         }
 
-        public Creature(string name, IEnumerable<Mana> manaCost, int power, int toughness)
-            : base(name)
-        {
-            ManaCost = manaCost;
-            Power = power;
-            Toughness = toughness;
-        }
-        
     }
 }
 
@@ -172,7 +176,9 @@ namespace Aurora
 Filename: Game.cs
 Path: D:/funandgiggels/Project-Aurora/Aurora\Game.cs
 Content:
-﻿using Aurora.Exceptions;
+﻿using Aurora.DTO;
+using Aurora.Exceptions;
+using Aurora.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -186,21 +192,22 @@ namespace Aurora
         public List<Player> Players { get; } = new List<Player>();
         public int currentPlayerIndex { get; set; } = 0;
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        private Dictionary<Player, int> _landsPlayedThisTurn = new Dictionary<Player, int>();
+        private Dictionary<string, int> _landsPlayedThisTurn = new Dictionary<string, int>();
         public bool _hasAttackedThisTurn = false;
         public bool IsGameOver { get; private set; }
-        public Player Winner { get; private set; }
+        public PlayerDTO Winner { get; private set; }
         public Phase CurrentPhase { get; private set; }
 
         private Player _attackingPlayer;
         private Player _defendingPlayer;
         private List<Creature> _attackingCreatures;
         private Dictionary<Creature, Creature> _blockingCreatures;
+        private readonly ICardConverter _cardConverter;
 
-        public Game(List<Player> players)
+        public Game(List<Player> players, ICardConverter cardConverter)
         {
             Players = players;
-
+            _cardConverter = cardConverter;
             foreach (Player player in Players)
             {
                 player.Deck.Shuffle();
@@ -211,7 +218,7 @@ namespace Aurora
         public void StartBeginningPhase()
         {
             CurrentPhase = Phase.Beginning;
-            _landsPlayedThisTurn[GetCurrentPlayer()] = 0;
+            _landsPlayedThisTurn[GetCurrentPlayerId()] = 0;
             _hasAttackedThisTurn = false;
             UntapPermanents(GetCurrentPlayer());
             DrawCard(GetCurrentPlayer());
@@ -253,11 +260,7 @@ namespace Aurora
                     StartEndPhase();
                     break;
                 case Phase.Ending:
-                    if (SwitchTurn())
-                    {
-                        AssignBlockers(Players[0], []);
-                        SwitchTurn();
-                    }
+                    SwitchTurn();
                     break;
                 default:
                     throw new InvalidOperationException("Unknown phase.");
@@ -269,8 +272,7 @@ namespace Aurora
             {
                 if (player.Life <= 0 || player.Deck.Cards.Count == 0)
                 {
-                    IsGameOver = true;
-                    Winner = Players.FirstOrDefault(p => p != player);
+                    SetWinner(player);
                     break;
                 }
             }
@@ -284,9 +286,30 @@ namespace Aurora
             }
         }
 
-        public Player GetCurrentPlayer()
+        private void SetWinner(Player player)
+        {
+            IsGameOver = true;
+            Winner = _cardConverter.ConvertToPlayerDTO(Players.FirstOrDefault(p => p != player));
+        }
+
+        public PlayerDTO GetCurrentPlayerDTO()
+        {
+            return _cardConverter.ConvertToPlayerDTO(Players[currentPlayerIndex]);
+        }
+
+        private Player GetCurrentPlayer()
         {
             return Players[currentPlayerIndex];
+        }
+
+        public string GetCurrentPlayerId()
+        {
+            return Players[currentPlayerIndex].Id;
+        }
+
+        public Player GetPlayerById(string id)
+        {
+            return Players.Where(p => p.Id == id).FirstOrDefault();
         }
 
         public void DrawCard(Player player)
@@ -297,8 +320,7 @@ namespace Aurora
             }
             catch (InvalidOperationException)
             {
-                IsGameOver = true;
-                Winner = Players.FirstOrDefault(p => p != player);
+                SetWinner(Players.FirstOrDefault(p => p != player));
             }
         }
 
@@ -329,24 +351,25 @@ namespace Aurora
             }
         }
 
-        public bool CanPlayLand(Player player)
+        public bool CanPlayLand(string playerId)
         {
-            if (!_landsPlayedThisTurn.ContainsKey(player))
+            if (!_landsPlayedThisTurn.ContainsKey(playerId))
             {
-                _landsPlayedThisTurn[player] = 0;
+                _landsPlayedThisTurn[playerId] = 0;
             }
-            return _landsPlayedThisTurn[player] == 0;
+            return _landsPlayedThisTurn[playerId] == 0;
         }
 
-        public void PlayLand(Player player, Land land)
+        public void PlayLand(string playerId, LandDTO landDTO)
         {
             if (CurrentPhase == Phase.MainPhase1 || CurrentPhase == Phase.MainPhase2)
             {
-
-                if (GetCurrentPlayer() == player && CanPlayLand(player))
+                var player = GetPlayerById(playerId);
+                if (GetCurrentPlayerId() == playerId && CanPlayLand(playerId))
                 {
+                    var land = _cardConverter.ConvertToLand(landDTO);
                     player.PlayLand(land);
-                    _landsPlayedThisTurn[player]++;
+                    _landsPlayedThisTurn[playerId]++;
                 }
                 else
                 {
@@ -359,12 +382,14 @@ namespace Aurora
             }
         }
 
-        public void CastCreature(Player player, Creature creature)
+        public void CastCreature(string playerId, CreatureDTO creatureDTO)
         {
             if (CurrentPhase == Phase.MainPhase1 || CurrentPhase == Phase.MainPhase2)
             {
-                var creatureToRemove = player.Hand.FirstOrDefault(c => c.Id == creature.Id);
-                if (creatureToRemove == null)
+                var player = GetPlayerById(playerId);
+                var creature = _cardConverter.ConvertToCreature(creatureDTO);
+
+                if (!player.Hand.Any(c => c.Id == creature.Id))
                 {
                     throw new InvalidMoveException("The creature is not in the player's hand.");
                 }
@@ -372,8 +397,7 @@ namespace Aurora
                 if (player.ManaPool.CanAfford(creature.ManaCost))
                 {
                     player.ManaPool.Spend(creature.ManaCost);
-
-                    player.Hand.Remove(creatureToRemove);
+                    player.Hand.RemoveAll(c => c.Id == creature.Id);
                     player.Battlefield.Add(creature);
                 }
                 else
@@ -398,9 +422,9 @@ namespace Aurora
                 {
                     Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
 
-                    if (landToPlay != null && CanPlayLand(aiPlayer))
+                    if (landToPlay != null && CanPlayLand(aiPlayer.Id))
                     {
-                        PlayLand(aiPlayer, landToPlay);
+                        PlayLand(aiPlayer.Id, _cardConverter.ConvertToLandDTO(landToPlay));
                     }
                 }
 
@@ -412,24 +436,19 @@ namespace Aurora
                 {
                     if (aiPlayer.ManaPool.CanAfford(creature.ManaCost))
                     {
-                        CastCreature(aiPlayer, creature);
+                        CastCreature(aiPlayer.Id, _cardConverter.ConvertToCreatureDTO(creature));
                         break; // Play only one creature per turn for now
                     }
                 }
                 AdvanceToNextPhase();
                 if (AIAttackAction())
                 {
-                    return true;
+                    return true; // Return true to indicate that the AI has declared attackers
 
                 }
                 else
                 {
-                    AdvanceToNextPhase();
-                    //Do secondmain stuff
-                    AdvanceToNextPhase();
-
-                    SwitchTurn();
-                    return false;
+                    return PostCombatAITurn();
                 }
             }
             else
@@ -438,6 +457,15 @@ namespace Aurora
             }
         }
 
+        public bool PostCombatAITurn()
+        {
+            AdvanceToNextPhase();
+            //Do secondmain stuff
+            AdvanceToNextPhase();
+
+            SwitchTurn();
+            return false;
+        }
 
         public void DeclareAttackers(Player attackingPlayer, List<Creature> attackingCreatures)
         {
@@ -472,20 +500,14 @@ namespace Aurora
         private bool AIAttackAction()
         {
             Player aiPlayer = Players[1];
-            List<Creature> attackingCreatures = [];
-            foreach (var card in aiPlayer.Battlefield)
+            List<Creature> attackingCreatures = aiPlayer.Battlefield.OfType<Creature>().Where(c => !c.IsTapped).ToList();
+
+            if (attackingCreatures.Any())
             {
-                if (card is Creature creature && !creature.IsTapped)
-                {
-                    attackingCreatures.Add(creature);
-                }
+                DeclareAttackers(aiPlayer, attackingCreatures);
+                return true; // Return true to indicate that the AI has declared attackers
             }
-            DeclareAttackers(aiPlayer, attackingCreatures);
-            if (Players[0].Battlefield.Select(c => c.IsTapped == false).Count() > 0)
-            {
-                return true;
-            }
-            AssignBlockers(Players[0], []);
+
             return false;
         }
 
@@ -763,8 +785,8 @@ namespace Aurora
             if (landToRemove != null)
             {
                 Hand.Remove(landToRemove);
-                Battlefield.Add(land);
-                ManaPool.Add(land.ProducedMana, land);
+                Battlefield.Add(landToRemove);
+                ManaPool.Add(landToRemove.ProducedMana, landToRemove);
             }
         }
 
@@ -780,22 +802,20 @@ namespace Aurora
             Hand.Add(drawnCard);
         }
 
-        public List<Creature> AssignBlockers(List<Creature> attackingCreatures)
+        public Dictionary<string, string> AssignBlockers(List<string> attackingCreatureIds)
         {
-            var blockingCreatures = new List<Creature>();
+            var blockingAssignments = new Dictionary<string, string>();
 
-            foreach (var attacker in attackingCreatures)
+            foreach (var attackerId in attackingCreatureIds)
             {
-                var blocker = Battlefield.OfType<Creature>().FirstOrDefault(c => !c.IsAttacking);
+                var blocker = Battlefield.OfType<Creature>().FirstOrDefault(c => !c.IsAttacking && !blockingAssignments.ContainsValue(c.Id));
                 if (blocker != null)
                 {
-                    attacker.IsBlocked = true;
-                    attacker.BlockedBy = blocker;
-                    blockingCreatures.Add(blocker);
+                    blockingAssignments[attackerId] = blocker.Id;
                 }
             }
 
-            return blockingCreatures;
+            return blockingAssignments;
         }
     }
 }
@@ -928,6 +948,7 @@ namespace Aurora.DTO
         public string Name { get; set; }
         public List<CardDTO> Hand { get; set; }
         public List<CardDTO> Battlefield { get; set; }
+        public List<CardDTO> Graveyard { get; set; }
         public int Life { get; set; }
     }
 }
@@ -1068,7 +1089,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Aurora")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a43e17461ac5def971936e67a63cc4de7b78f77c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+48f2b8395bfaa91baf05be7204f9f3ea9d22a3f9")]
 [assembly: System.Reflection.AssemblyProductAttribute("Aurora")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Aurora")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
@@ -1097,6 +1118,7 @@ Content:
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -1138,6 +1160,83 @@ namespace Aurora.Services
                         Name = card.Name
                     };
             }
+        }
+
+        public CreatureDTO ConvertToCreatureDTO(Creature creature)
+        {
+            return new CreatureDTO
+            {
+                Id = creature.Id,
+                Name = creature.Name,
+                Power = creature.Power,
+                Toughness = creature.Toughness,
+                ManaCost = creature.ManaCost.Select(m => m.ToString()).ToList(),
+                IsTapped = creature.IsTapped,
+                IsAttacking = creature.IsAttacking,
+                IsBlocked = creature.IsBlocked,
+                BlockedBy = creature.BlockedBy != null ? ConvertToCardDTO(creature.BlockedBy) as CreatureDTO : null
+            };
+        }
+
+        public LandDTO ConvertToLandDTO(Land land)
+        {
+            return new LandDTO
+            {
+                Id = land.Id,
+                Name = land.Name,
+                LandType = land.Type.ToString(),
+                IsTapped = land.IsTapped
+            };
+        }
+
+        public Creature ConvertToCreature(CreatureDTO creatureDTO)
+        {
+            return new Creature(creatureDTO.Name)
+            {
+                Id = creatureDTO.Id,
+                IsTapped = creatureDTO.IsTapped,
+                ManaCost = creatureDTO.ManaCost.Select(m => (Mana)Enum.Parse(typeof(Mana), m)),
+                Power = creatureDTO.Power,
+                Toughness = creatureDTO.Toughness,
+                IsAttacking = creatureDTO.IsAttacking,
+                IsBlocked = creatureDTO.IsBlocked,
+            };
+        }
+
+        public Land ConvertToLand(LandDTO land)
+        {
+            var typeName = land.Type;
+            Land returnLand;
+            if(Enum.TryParse(typeName, true, out LandType type))
+            {
+                returnLand = new Land(type)
+                {
+                    Id = land.Id,
+                    IsTapped = land.IsTapped
+                };
+            }
+            else
+            {
+                returnLand = new Land(LandType.Forest)
+                {
+                    Id = land.Id,
+                    IsTapped = land.IsTapped
+                };
+            }
+            return returnLand;
+        }
+
+        public PlayerDTO ConvertToPlayerDTO(Player player)
+        {
+            return new PlayerDTO
+            {
+                Id = player.Id,
+                Name = player.Name,
+                Hand = player.Hand.Select(c => ConvertToCardDTO(c)).ToList(),
+                Battlefield = player.Battlefield.Select(c => ConvertToCardDTO(c)).ToList(),
+                Graveyard = player.Graveyard.Select(c => ConvertToCardDTO(c)).ToList(),
+                Life = player.Life
+            };
         }
     }
 }
@@ -1198,7 +1297,7 @@ namespace Aurora.Services
 			var game = new Game(new List<Player>() {
 		new Player(playerName),
 		new Player("AI")
-	});
+	}, _cardConverter);
 			_games.AddGame(game);
 
 			return CreateGameDTOFromGame(game);
@@ -1237,7 +1336,7 @@ namespace Aurora.Services
 					Life = p.Life
 				}).ToList();
 
-				var game = new Game(players);
+				var game = new Game(players, _cardConverter);
 				_games.AddGame(game);
 
 				return CreateGameDTOFromGame(game);
@@ -1534,6 +1633,11 @@ namespace Aurora.Services
     public interface ICardConverter
     {
         CardDTO ConvertToCardDTO(Card card);
+        PlayerDTO ConvertToPlayerDTO(Player player);
+        Land ConvertToLand(LandDTO land);
+        LandDTO ConvertToLandDTO(Land land);
+        CreatureDTO ConvertToCreatureDTO(Creature creature);
+        Creature ConvertToCreature(CreatureDTO creature);
     }
 }
 
@@ -1718,14 +1822,15 @@ namespace Aurora.Services
 		private readonly ILogger<PlayerActionService> _logger;
         private readonly IGameStorage _games;
         private readonly IGameManager _gameManager;
-
-        public PlayerActionService(ILogger<PlayerActionService> _logger, IGameStorage _games, IGameManager _gameManager)
-		{
-			this._logger = _logger;
+		private readonly ICardConverter _cardConverter;
+        public PlayerActionService(ILogger<PlayerActionService> _logger, IGameStorage _games, IGameManager _gameManager, ICardConverter cardConverter)
+        {
+            this._logger = _logger;
             this._games = _games;
             this._gameManager = _gameManager;
+            _cardConverter = cardConverter;
         }
-		public GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments)
+        public GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments)
 		{
 			try
 			{
@@ -1754,7 +1859,12 @@ namespace Aurora.Services
 
 				game.AssignBlockers(defendingPlayer, blockingCreatures);
 
-				return _gameManager.GetGameState(gameId);
+				if(game.GetCurrentPlayerId() == game.Players[1].Id)
+				{
+					game.PostCombatAITurn();
+				}
+
+                return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)
 			{
@@ -1785,7 +1895,7 @@ namespace Aurora.Services
 
 				if (game._hasAttackedThisTurn)
 				{
-					throw new InvalidMoveException($"{game.GetCurrentPlayer().Name} has already attacked this turn");
+					throw new InvalidMoveException($"{game.Players.Find(p => p.Id == (game.GetCurrentPlayerId())).Name} has already attacked this turn");
 				}
 
 				var attackingCreatures = attackingPlayer.Battlefield.OfType<Creature>()
@@ -1793,8 +1903,17 @@ namespace Aurora.Services
 
 				game.DeclareAttackers(attackingPlayer, attackingCreatures);
 
-				return _gameManager.GetGameState(gameId);
-			}
+                if (attackingPlayer == game.Players[1]) // If the attacking player is the AI
+                {
+                    // Return the updated game state to prompt the human player to declare blockers
+                    return _gameManager.GetGameState(gameId);
+                }
+                else
+                {
+                    // For human player attacks, proceed with the existing flow
+                    return _gameManager.GetGameState(gameId);
+                }
+            }
 			catch (GameNotFoundException ex)
 			{
 				_logger.LogError(ex, "Game not Found");
@@ -1852,7 +1971,7 @@ namespace Aurora.Services
 					} : null
 				};
 
-				game.CastCreature(player, creature);
+				game.CastCreature(player.Id, _cardConverter.ConvertToCreatureDTO(creature));
 				return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)
@@ -1903,7 +2022,7 @@ namespace Aurora.Services
 					IsTapped = landDTO.IsTapped
 				};
 
-				game.PlayLand(player, land);
+				game.PlayLand(player.Id, _cardConverter.ConvertToLandDTO(land));
 				return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)

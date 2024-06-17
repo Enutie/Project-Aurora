@@ -14,14 +14,15 @@ namespace Aurora.Services
 		private readonly ILogger<PlayerActionService> _logger;
         private readonly IGameStorage _games;
         private readonly IGameManager _gameManager;
-
-        public PlayerActionService(ILogger<PlayerActionService> _logger, IGameStorage _games, IGameManager _gameManager)
-		{
-			this._logger = _logger;
+		private readonly ICardConverter _cardConverter;
+        public PlayerActionService(ILogger<PlayerActionService> _logger, IGameStorage _games, IGameManager _gameManager, ICardConverter cardConverter)
+        {
+            this._logger = _logger;
             this._games = _games;
             this._gameManager = _gameManager;
+            _cardConverter = cardConverter;
         }
-		public GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments)
+        public GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments)
 		{
 			try
 			{
@@ -50,7 +51,7 @@ namespace Aurora.Services
 
 				game.AssignBlockers(defendingPlayer, blockingCreatures);
 
-				if(game.GetCurrentPlayer() == game.Players[1])
+				if(game.GetCurrentPlayerId() == game.Players[1].Id)
 				{
 					game.PostCombatAITurn();
 				}
@@ -86,7 +87,7 @@ namespace Aurora.Services
 
 				if (game._hasAttackedThisTurn)
 				{
-					throw new InvalidMoveException($"{game.GetCurrentPlayer().Name} has already attacked this turn");
+					throw new InvalidMoveException($"{game.Players.Find(p => p.Id == (game.GetCurrentPlayerId())).Name} has already attacked this turn");
 				}
 
 				var attackingCreatures = attackingPlayer.Battlefield.OfType<Creature>()
@@ -162,7 +163,7 @@ namespace Aurora.Services
 					} : null
 				};
 
-				game.CastCreature(player, creature);
+				game.CastCreature(player.Id, _cardConverter.ConvertToCreatureDTO(creature));
 				return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)
@@ -213,7 +214,7 @@ namespace Aurora.Services
 					IsTapped = landDTO.IsTapped
 				};
 
-				game.PlayLand(player, land);
+				game.PlayLand(player.Id, _cardConverter.ConvertToLandDTO(land));
 				return _gameManager.GetGameState(gameId);
 			}
 			catch (GameNotFoundException ex)

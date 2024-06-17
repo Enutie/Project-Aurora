@@ -12,6 +12,7 @@ namespace Aurora.DTO
         public string Name { get; set; }
         public List<CardDTO> Hand { get; set; }
         public List<CardDTO> Battlefield { get; set; }
+        public List<CardDTO> Graveyard { get; set; }
         public int Life { get; set; }
     }
 }

@@ -244,9 +244,9 @@ namespace Aurora
                 {
                     Land landToPlay = aiPlayer.Hand.OfType<Land>().FirstOrDefault();
 
-                    if (landToPlay != null && CanPlayLand(aiPlayer))
+                    if (landToPlay != null && CanPlayLand(aiPlayer.Id))
                     {
-                        PlayLand(aiPlayer, landToPlay);
+                        PlayLand(aiPlayer.Id, _cardConverter.ConvertToLandDTO(landToPlay));
                     }
                 }
 
@@ -258,7 +258,7 @@ namespace Aurora
                 {
                     if (aiPlayer.ManaPool.CanAfford(creature.ManaCost))
                     {
-                        CastCreature(aiPlayer, creature);
+                        CastCreature(aiPlayer.Id, _cardConverter.ConvertToCreatureDTO(creature));
                         break; // Play only one creature per turn for now
                     }
                 }

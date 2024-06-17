@@ -8,11 +8,23 @@ namespace Aurora
 {
     public class Creature : Card
     {
+        public Creature(string name) : base(name)
+        {
+        }
+
+        public Creature(string name, IEnumerable<Mana> manaCost,
+            int power, int toughness): base(name)
+        {
+            ManaCost = manaCost;
+            Power = power;
+            Toughness = toughness;
+        }
+
         public IEnumerable<Mana> ManaCost { get; set; }
         public int Power { get; set; }
         public int Toughness { get; set; }
-        public bool IsAttacking { get; set; }
-        public bool IsBlocked { get; set; }
+        public bool IsAttacking { get; set; } = false;
+        public bool IsBlocked { get; set; } = false ;
         public Creature BlockedBy { get; set; }
 
         public void DealDamage(Creature target)
@@ -20,13 +32,5 @@ namespace Aurora
             target.Toughness -= Power;
         }
 
-        public Creature(string name, IEnumerable<Mana> manaCost, int power, int toughness)
-            : base(name)
-        {
-            ManaCost = manaCost;
-            Power = power;
-            Toughness = toughness;
-        }
-        
     }
 }

@@ -12,6 +12,8 @@ namespace Aurora.Services
         CardDTO ConvertToCardDTO(Card card);
         PlayerDTO ConvertToPlayerDTO(Player player);
         Land ConvertToLand(LandDTO land);
+        LandDTO ConvertToLandDTO(Land land);
+        CreatureDTO ConvertToCreatureDTO(Creature creature);
         Creature ConvertToCreature(CreatureDTO creature);
     }
 }

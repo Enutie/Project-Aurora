@@ -50,7 +50,7 @@ namespace Aurora.Services
 			var game = new Game(new List<Player>() {
 		new Player(playerName),
 		new Player("AI")
-	});
+	}, _cardConverter);
 			_games.AddGame(game);
 
 			return CreateGameDTOFromGame(game);
@@ -89,7 +89,7 @@ namespace Aurora.Services
 					Life = p.Life
 				}).ToList();
 
-				var game = new Game(players);
+				var game = new Game(players, _cardConverter);
 				_games.AddGame(game);
 
 				return CreateGameDTOFromGame(game);
