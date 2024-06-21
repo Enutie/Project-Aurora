@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Aurora.Services;
-using Aurora.DTO;
 using Aurora.Server.Models;
-using Aurora.Exceptions;
+using Aurora.Application.DTO;
+using Aurora.Application.Interfaces;
+using Aurora.Shared.Exceptions;
 
 namespace Aurora.Controllers
 {

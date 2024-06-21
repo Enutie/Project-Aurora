@@ -1,5 +1,6 @@
 ./
     Card.cs
+    CardManager.cs
     Creature.cs
     Deck.cs
     DeckFactory.cs
@@ -20,6 +21,12 @@
         InvalidMoveException.cs
         InvalidPhaseException.cs
         PlayerNotFoundException.cs
+    obj/
+        Debug/
+            net8.0/
+                .NETCoreApp,Version=v8.0.AssemblyAttributes.cs
+                Aurora.AssemblyInfo.cs
+                Aurora.GlobalUsings.g.cs
     Services/
         CardConverter.cs
         GameManager.cs

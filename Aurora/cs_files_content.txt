@@ -45,6 +45,59 @@ Content:
 }
 
 --------------------------------------------------
+Filename: CardManager.cs
+Path: D:/funandgiggels/Project-Aurora/Aurora\CardManager.cs
+Content:
+﻿using Aurora.DTO;
+using Aurora.Exceptions;
+using Aurora.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Aurora
+{
+    public class CardManager
+    {
+        private readonly ICardConverter _cardConverter;
+
+        public CardManager(ICardConverter cardConverter)
+        {
+            _cardConverter = cardConverter;
+        }
+
+        public void PlayLand(Player player, LandDTO landDTO)
+        {
+            var land = _cardConverter.ConvertToLand(landDTO);
+            player.PlayLand(land);
+        }
+
+        public void CastCreature(Player player, CreatureDTO creatureDTO)
+        {
+            var creature = _cardConverter.ConvertToCreature(creatureDTO);
+
+            if (!player.Hand.Any(c => c.Id == creature.Id))
+            {
+                throw new InvalidMoveException("The creature is not in the player's hand.");
+            }
+
+            if (player.ManaPool.CanAfford(creature.ManaCost))
+            {
+                player.ManaPool.Spend(creature.ManaCost);
+                player.Hand.RemoveAll(c => c.Id == creature.Id);
+                player.Battlefield.Add(creature);
+            }
+            else
+            {
+                throw new InvalidMoveException("Player does not have enough mana to cast the creature.");
+            }
+        }
+    }
+}
+
+--------------------------------------------------
 Filename: Creature.cs
 Path: D:/funandgiggels/Project-Aurora/Aurora\Creature.cs
 Content:
@@ -1089,7 +1142,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Aurora")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+48f2b8395bfaa91baf05be7204f9f3ea9d22a3f9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b450875f7bb49ecad47c0b40c4d95cc2d610e7b2")]
 [assembly: System.Reflection.AssemblyProductAttribute("Aurora")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Aurora")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
