@@ -241,7 +241,7 @@ Content:
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useGameStore } from '../stores/gameStore'
 
 const gameStore = useGameStore();
@@ -250,9 +250,28 @@ const selectedBlockers = ref([]);
 
 const availableBlockers = computed(() => {
   const result = gameStore.defendingCreatures.filter(creature => !creature.isTapped);
-  console.log('avaiableBlockers: ', result)
+  console.log('availableBlockers:', result);
   return result;
 });
+
+// Watch for changes in defendingCreatures to re-compute availableBlockers
+watch(
+  () => gameStore.defendingCreatures,
+  (newDefenders) => {
+    console.log('Defending creatures changed:', newDefenders);
+  }
+);
+
+watch(
+  () => gameStore.showBlockerModal,
+  async (newValue) => {
+    if (newValue) {
+      console.log('Blocker modal is now visible');
+      await gameStore.fetchGameState(); // Ensure fresh game state when modal becomes visible
+      console.log('Game state fetched for blocker modal:', gameStore.defendingCreatures);
+    }
+  }
+);
 
 function confirmBlockers() {
   const blockerAssignments = getSelectedBlockers();
@@ -280,8 +299,8 @@ function getSelectedBlockers() {
 }
 </script>
   
-  <style scoped>
-  .modal {
+<style scoped>
+.modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -338,7 +357,8 @@ h3 {
 .cancel-button:hover {
   background-color: #d32f2f;
 }
-  </style>
+</style>
+
 --------------------------------------------------
 Filename: Card.vue
 Path: D:\funandgiggels\Project-Aurora\Aurora.Frontend\aurora.frontend.client\src\components\Card.vue
@@ -1186,6 +1206,7 @@ export const useGameStore = defineStore('game', {
         const defendingPlayer = this.players.find((player) => player.id === opponentId)
         if (defendingPlayer) {
           this.defendingCreatures = defendingPlayer.battlefield.filter((creature) => !creature.isAttacking)
+          console.log('Updated defendingCreatures:', this.defendingCreatures); // Log defendingCreatures
         }
       } catch (error) {
         console.error('Error attacking', error)
@@ -1196,27 +1217,29 @@ export const useGameStore = defineStore('game', {
       const aiPlayer = this.players.find((player) => player.name === 'AI');
       if (aiPlayer) {
         const opponentAttackingCreatures = aiPlayer.battlefield.filter((creature) => creature.isAttacking);
-    
+
         if (opponentAttackingCreatures.length > 0) {
           this.attackingCreatures = opponentAttackingCreatures;
           this.defendingCreatures = this.players[0].battlefield.filter((creature) => !creature.isAttacking);
+          console.log('Prompting for blockers with defendingCreatures:', this.defendingCreatures); // Log defendingCreatures
           this.showBlockerModal = true;
-          console.log('Prompting for blockers');
+          this.fetchGameState(); // Fetch game state before showing the modal
         }
       }
     },
 
     async assignBlockers(defendingPlayerId, blockerAssignments) {
       try {
-        const response = await assignBlockersAPI(this.gameId, defendingPlayerId, blockerAssignments)
-        this.attackingCreatures = []
-        this.defendingCreatures = []
+        const response = await assignBlockersAPI(this.gameId, defendingPlayerId, blockerAssignments);
+        this.attackingCreatures = [];
+        this.defendingCreatures = [];
         for (const player of response.data.players) {
           for (const creature of player.battlefield) {
-            creature.isAttacking = false
+            creature.isAttacking = false;
           }
         }
-        this.updateGameState(response.data)
+        this.updateGameState(response.data);
+        this.fetchGameState(); // Ensure fresh data after assigning blockers
       } catch (error) {
         console.error('Error assigning blockers:', error)
       }
@@ -1232,7 +1255,6 @@ export const useGameStore = defineStore('game', {
     },
   },
   getters: {
-    
     opponentIsAttacking() {
       const aiPlayerId = this.players.find((player) => player.name === 'AI')?.id
       if (aiPlayerId) {
@@ -1245,8 +1267,7 @@ export const useGameStore = defineStore('game', {
       console.log('AI not found or not attacking')
       return false
     },
-    getNextPhase()
-    {
+    getNextPhase() {
       const phases = [
         'Beginning',
         'MainPhase1',

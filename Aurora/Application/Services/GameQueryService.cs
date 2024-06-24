@@ -28,53 +28,113 @@ namespace Aurora.Application.Services
 
         public CreatureDTO GetCreatureById(string creatureId)
         {
+            _logger.LogInformation($"Searching for creature with ID: {creatureId}");
             var games = _games.GetAllGames();
-            var game = games.FirstOrDefault(g => g.Players.Any(p => p.Hand.Any(c => c.Id == creatureId && c is Creature)));
+            _logger.LogInformation($"Number of games: {games.Count()}");
 
-            if (game == null)
+            foreach (var game in games)
             {
-                return null;
+                var gameState = game.GetGameState();
+                _logger.LogInformation($"Checking game: {gameState.Id}");
+
+                if (gameState.Players == null)
+                {
+                    _logger.LogWarning($"Players list is null for game {gameState.Id}");
+                    continue;
+                }
+
+                foreach (var player in gameState.Players)
+                {
+                    if (player == null)
+                    {
+                        _logger.LogWarning($"Encountered a null player in game {gameState.Id}");
+                        continue;
+                    }
+
+                    _logger.LogInformation($"Checking player: {player.Id}");
+                    _logger.LogInformation($"Cards in hand: {player.Hand?.Count ?? 0}, Cards on battlefield: {player.Battlefield?.Count ?? 0}");
+
+                    // Check in hand
+                    var creatureInHand = player.Hand?.OfType<CreatureDTO>().FirstOrDefault(c => c.Id == creatureId);
+                    if (creatureInHand != null)
+                    {
+                        _logger.LogInformation($"Found creature in player's hand: {creatureInHand.Id}");
+                        return creatureInHand;
+                    }
+
+                    // Check on battlefield
+                    var creatureOnBattlefield = player.Battlefield?.OfType<CreatureDTO>().FirstOrDefault(c => c.Id == creatureId);
+                    if (creatureOnBattlefield != null)
+                    {
+                        _logger.LogInformation($"Found creature on player's battlefield: {creatureOnBattlefield.Id}");
+                        return creatureOnBattlefield;
+                    }
+
+                    // Optionally, check in graveyard if you're tracking that
+                    if (player.Graveyard != null)
+                    {
+                        var creatureInGraveyard = player.Graveyard.OfType<CreatureDTO>().FirstOrDefault(c => c.Id == creatureId);
+                        if (creatureInGraveyard != null)
+                        {
+                            _logger.LogInformation($"Found creature in player's graveyard: {creatureInGraveyard.Id}");
+                            return creatureInGraveyard;
+                        }
+                    }
+                }
             }
 
-            var creature = game.Players.SelectMany(p => p.Hand).OfType<Creature>().FirstOrDefault(c => c.Id == creatureId);
-
-            if (creature == null)
-            {
-                return null;
-            }
-
-            return new CreatureDTO
-            {
-                Id = creature.Id,
-                Name = creature.Name,
-                ManaCost = creature.ManaCost.Select(m => m.ToString()).ToList(),
-                Power = creature.Power,
-                Toughness = creature.Toughness
-            };
+            _logger.LogWarning($"Creature with ID {creatureId} not found in any game or player");
+            return null;
         }
 
         public LandDTO GetLandById(string landId)
         {
+            _logger.LogInformation($"Searching for land with ID: {landId}");
             var games = _games.GetAllGames();
-            var game = games.FirstOrDefault(g => g.Players.Any(p => p.Hand.Any(c => c.Id == landId && c is Land)));
+            _logger.LogInformation($"Number of games: {games.Count()}");
 
-            if (game == null)
+            foreach (var game in games)
             {
-                return null;
+                var gameState = game.GetGameState();
+                _logger.LogInformation($"Checking game: {gameState.Id}");
+
+                if (gameState.Players == null)
+                {
+                    _logger.LogWarning($"Players list is null for game {gameState.Id}");
+                    continue;
+                }
+
+                foreach (var player in gameState.Players)
+                {
+                    if (player == null)
+                    {
+                        _logger.LogWarning($"Encountered a null player in game {gameState.Id}");
+                        continue;
+                    }
+
+                    _logger.LogInformation($"Checking player: {player.Id}");
+                    _logger.LogInformation($"Cards in hand: {player.Hand?.Count ?? 0}, Cards on battlefield: {player.Battlefield?.Count ?? 0}");
+
+                    // Check in hand
+                    var landInHand = player.Hand?.OfType<LandDTO>().FirstOrDefault(l => l.Id == landId);
+                    if (landInHand != null)
+                    {
+                        _logger.LogInformation($"Found land in player's hand: {landInHand.Id}");
+                        return landInHand;
+                    }
+
+                    // Check on battlefield
+                    var landOnBattlefield = player.Battlefield?.OfType<LandDTO>().FirstOrDefault(l => l.Id == landId);
+                    if (landOnBattlefield != null)
+                    {
+                        _logger.LogInformation($"Found land on player's battlefield: {landOnBattlefield.Id}");
+                        return landOnBattlefield;
+                    }
+                }
             }
 
-            var land = game.Players.SelectMany(p => p.Hand).OfType<Land>().FirstOrDefault(l => l.Id == landId);
-
-            if (land == null)
-            {
-                return null;
-            }
-
-            return new LandDTO
-            {
-                Id = land.Id,
-                LandType = land.Type.ToString()
-            };
+            _logger.LogWarning($"Land with ID {landId} not found in any game or player");
+            return null;
         }
 
         public PlayerDTO GetPlayerInfo(string gameId, string playerId)
@@ -86,7 +146,7 @@ namespace Aurora.Application.Services
                     throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
                 }
 
-                var player = game.Players.FirstOrDefault(p => p.Id == playerId);
+                var player = game.GetGameState().Players.FirstOrDefault(p => p.Id == playerId);
                 if (player == null)
                 {
                     throw new PlayerNotFoundException($"Player with ID '{playerId}' not found in the game.");
@@ -96,8 +156,8 @@ namespace Aurora.Application.Services
                 {
                     Id = player.Id,
                     Name = player.Name,
-                    Hand = player.Hand.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
-                    Battlefield = player.Battlefield.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+                    Hand = player.Hand,
+                    Battlefield = player.Battlefield,
                     Life = player.Life
                 };
             }

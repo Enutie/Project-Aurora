@@ -130,26 +130,22 @@ namespace Aurora.Application.Services
 
         private GameDTO CreateGameDTOFromGame(Game game)
         {
+            var gameState = game.GetGameState();
             return new GameDTO
             {
-                Id = game.Id,
-                Players = game.Players.Select(p => new PlayerDTO
+                Id = gameState.Id,
+                Players = gameState.Players.Select(p => new PlayerDTO
                 {
                     Id = p.Id,
                     Name = p.Name,
-                    Hand = p.Hand.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
-                    Battlefield = p.Battlefield.Select(c => _cardConverter.ConvertToCardDTO(c)).ToList(),
+                    Hand = p.Hand.Cast<CardDTO>().ToList(),
+                    Battlefield = p.Battlefield.Cast<CardDTO>().ToList(),
                     Life = p.Life
                 }).ToList(),
-                CurrentPlayerIndex = game.currentPlayerIndex,
-                IsGameOver = game.IsGameOver,
-                Winner = game.Winner != null ? new PlayerDTO
-                {
-                    Id = game.Winner.Id,
-                    Name = game.Winner.Name,
-                    Life = game.Winner.Life
-                } : null,
-                CurrentPhase = game.CurrentPhase.ToString(),
+                CurrentPlayerIndex = gameState.CurrentPlayerIndex,
+                IsGameOver = gameState.IsGameOver,
+                Winner = gameState.Winner,
+                CurrentPhase = gameState.CurrentPhase.ToString(),
             };
         }
     }

@@ -26,6 +26,7 @@ namespace Aurora.Domain.Entities
         {
             Name = name;
             Deck = DeckFactory.MonoGreenVanilla();
+            Deck.Shuffle();
         }
 
         public Player()

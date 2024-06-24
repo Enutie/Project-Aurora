@@ -14,19 +14,22 @@ using Aurora.Domain.Enums;
 
 namespace Aurora.Application.Services
 {
+
     public class PlayerActionService : IPlayerActionService
     {
         private readonly ILogger<PlayerActionService> _logger;
         private readonly IGameStorage _games;
         private readonly IGameManager _gameManager;
         private readonly ICardConverter _cardConverter;
-        public PlayerActionService(ILogger<PlayerActionService> _logger, IGameStorage _games, IGameManager _gameManager, ICardConverter cardConverter)
+
+        public PlayerActionService(ILogger<PlayerActionService> logger, IGameStorage games, IGameManager gameManager, ICardConverter cardConverter)
         {
-            this._logger = _logger;
-            this._games = _games;
-            this._gameManager = _gameManager;
+            _logger = logger;
+            _games = games;
+            _gameManager = gameManager;
             _cardConverter = cardConverter;
         }
+
         public GameDTO AssignBlockers(string gameId, string defendingPlayerId, Dictionary<string, string> blockerAssignments)
         {
             try
@@ -36,32 +39,9 @@ namespace Aurora.Application.Services
                     throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
                 }
 
-                var defendingPlayer = game.Players.FirstOrDefault(p => p.Id == defendingPlayerId);
-                if (defendingPlayer == null)
-                {
-                    throw new PlayerNotFoundException($"Defending player with ID '{defendingPlayerId}' not found in the game.");
-                }
+                game.AssignBlockers(defendingPlayerId, blockerAssignments);
 
-                var blockingCreatures = new Dictionary<Creature, Creature>();
-                foreach (var assignment in blockerAssignments)
-                {
-                    var attackingCreature = game.Players.SelectMany(p => p.Battlefield).OfType<Creature>().FirstOrDefault(c => c.Id == assignment.Key);
-                    var blockingCreature = defendingPlayer.Battlefield.OfType<Creature>().FirstOrDefault(c => c.Id == assignment.Value);
-
-                    if (attackingCreature != null && blockingCreature != null)
-                    {
-                        blockingCreatures[attackingCreature] = blockingCreature;
-                    }
-                }
-
-                game.AssignBlockers(defendingPlayer, blockingCreatures);
-
-                if (game.GetCurrentPlayerId() == game.Players[1].Id)
-                {
-                    game.PostCombatAITurn();
-                }
-
-                return _gameManager.GetGameState(gameId);
+                return game.GetGameState();
             }
             catch (GameNotFoundException ex)
             {
@@ -84,32 +64,9 @@ namespace Aurora.Application.Services
                     throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
                 }
 
-                var attackingPlayer = game.Players.FirstOrDefault(p => p.Id == attackingPlayerId);
-                if (attackingPlayer == null)
-                {
-                    throw new PlayerNotFoundException($"Attacking player with ID '{attackingPlayerId}' not found in the game.");
-                }
+                game.DeclareAttackers(attackingPlayerId, attackingCreatureIds);
 
-                if (game._hasAttackedThisTurn)
-                {
-                    throw new InvalidMoveException($"{game.Players.Find(p => p.Id == game.GetCurrentPlayerId()).Name} has already attacked this turn");
-                }
-
-                var attackingCreatures = attackingPlayer.Battlefield.OfType<Creature>()
-                    .Where(c => attackingCreatureIds.Contains(c.Id)).ToList();
-
-                game.DeclareAttackers(attackingPlayer, attackingCreatures);
-
-                if (attackingPlayer == game.Players[1]) // If the attacking player is the AI
-                {
-                    // Return the updated game state to prompt the human player to declare blockers
-                    return _gameManager.GetGameState(gameId);
-                }
-                else
-                {
-                    // For human player attacks, proceed with the existing flow
-                    return _gameManager.GetGameState(gameId);
-                }
+                return game.GetGameState();
             }
             catch (GameNotFoundException ex)
             {
@@ -129,7 +86,7 @@ namespace Aurora.Application.Services
             catch (InvalidPhaseException ex)
             {
                 _logger.LogError(ex, "Can only attack in the combat phase");
-                throw new InvalidPhaseException("Can only attack in the combat phase");
+                throw;
             }
             catch (Exception ex)
             {
@@ -147,29 +104,9 @@ namespace Aurora.Application.Services
                     throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
                 }
 
-                var player = game.Players.FirstOrDefault(p => p.Id == playerId);
-                if (player == null)
-                {
-                    throw new PlayerNotFoundException($"Player with ID '{playerId}' not found in the game.");
-                }
+                game.CastCreature(playerId, creatureDTO);
 
-                var creature = new Creature(creatureDTO.Name,
-                    creatureDTO.ManaCost.Select(mana => (Mana)Enum.Parse(typeof(Mana), mana)).ToList(),
-                    creatureDTO.Power, creatureDTO.Toughness)
-                {
-                    Id = creatureDTO.Id,
-                    IsAttacking = creatureDTO.IsAttacking,
-                    IsBlocked = creatureDTO.IsBlocked,
-                    BlockedBy = creatureDTO.BlockedBy != null ? new Creature(creatureDTO.BlockedBy.Name,
-                    creatureDTO.BlockedBy.ManaCost.Select(mana => (Mana)Enum.Parse(typeof(Mana), mana)).ToList(),
-                    creatureDTO.BlockedBy.Power, creatureDTO.BlockedBy.Toughness)
-                    {
-                        Id = creatureDTO.BlockedBy.Id
-                    } : null
-                };
-
-                game.CastCreature(player.Id, _cardConverter.ConvertToCreatureDTO(creature));
-                return _gameManager.GetGameState(gameId);
+                return game.GetGameState();
             }
             catch (GameNotFoundException ex)
             {
@@ -189,7 +126,7 @@ namespace Aurora.Application.Services
             catch (InvalidPhaseException ex)
             {
                 _logger.LogError(ex, "Can only play creatures in first or second mainphase");
-                throw new InvalidPhaseException("Can only play creatures in first or second mainphase");
+                throw;
             }
             catch (Exception ex)
             {
@@ -207,20 +144,9 @@ namespace Aurora.Application.Services
                     throw new GameNotFoundException($"Game with ID '{gameId}' not found.");
                 }
 
-                var player = game.Players.FirstOrDefault(p => p.Id == playerId);
-                if (player == null)
-                {
-                    throw new PlayerNotFoundException($"Player with ID '{playerId}' not found in the game.");
-                }
+                game.PlayLand(playerId, landDTO);
 
-                var land = new Land((LandType)Enum.Parse(typeof(LandType), landDTO.LandType.ToString()))
-                {
-                    Id = landDTO.Id,
-                    IsTapped = landDTO.IsTapped
-                };
-
-                game.PlayLand(player.Id, _cardConverter.ConvertToLandDTO(land));
-                return _gameManager.GetGameState(gameId);
+                return game.GetGameState();
             }
             catch (GameNotFoundException ex)
             {

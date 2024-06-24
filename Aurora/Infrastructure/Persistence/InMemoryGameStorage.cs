@@ -13,7 +13,7 @@ namespace Aurora.Infrastructure.Persistence
         private readonly Dictionary<string, Game> _games = new Dictionary<string, Game>();
         public void AddGame(Game game)
         {
-            _games[game.Id] = game;
+            _games[game.GetGameState().Id] = game;
         }
 
         public IEnumerable<Game> GetAllGames()
